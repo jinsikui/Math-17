@@ -3,244 +3,204 @@ import ReactMarkdown from "react-markdown";
 import rehypeKatex from "rehype-katex";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
+import projectSections from "./data/sections.json";
 import {
   BookOpenText,
   Brush,
+  Check,
   Eraser,
   Edit3,
   FileText,
   Landmark,
   PenLine,
+  Plus,
+  Settings2,
+  Trash2,
   Undo2,
+  ArrowDown,
+  ArrowUp,
   X,
 } from "lucide-react";
 
-const STORAGE_KEY = "math-17-sections-v1";
+const SECTIONS_API_PATH = "/api/sections";
+const MARKDOWN_API_BASE_PATH = "/api/markdown";
+const PROBLEM_IMAGE_FILE = "gauss-heptadecagon-memorial.jpg";
+const OLD_PROBLEM_IMAGE_FILE = "gauss-tombstone-heptadecagon-illustration.svg";
+const PROBLEM_IMAGE_MARKDOWN = `
 
-const initialSections = [
-  {
-    id: "problem",
-    title: "问题提出",
-    eyebrow: "从一个圆开始",
-    content: `# 问题提出
+## 示例
 
-给定一个圆，只允许使用**无刻度直尺**和**圆规**，能否作出它的内接正十七边形？
+![布伦瑞克高斯纪念碑上的 17 角星](${PROBLEM_IMAGE_FILE})
 
-这个问题可以被理解为：
+图中是布伦瑞克高斯纪念碑上的 17 角星意象。它常被用来纪念高斯对正十七边形可作性的发现。图片：Brunswyk / [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Braunschweig_Gauss-Denkmal_17-eckiger_Stern.jpg)，CC BY-SA 3.0 / GFDL。`;
+const OLD_PROBLEM_IMAGE_MARKDOWN = `
 
-$$
-\\text{能否构造 } \\cos\\frac{2\\pi}{17}
-$$
+## 示例
 
-若中心角
+![高斯墓碑与正十七边形示意图](${OLD_PROBLEM_IMAGE_FILE})
 
-$$
-\\theta = \\frac{2\\pi}{17}
-$$
+据传高斯希望墓碑上刻正十七边形，但这个愿望没有实际实现。图中是为了说明这个故事而制作的示意图，不是实物照片。`;
 
-可以通过尺规作图得到，那么在圆周上依次截取相同弦长，就能得到正十七边形。
-
-## 观察
-
-- 正三角形、正四边形、正五边形都容易作出。
-- 正七边形不能用尺规精确作出。
-- 正十七边形的可作性并不直观，它是代数结构给出的结论。`,
-  },
-  {
-    id: "gauss",
-    title: "历史和高斯的贡献",
-    eyebrow: "1796 年的发现",
-    content: `# 历史和高斯的贡献
-
-1796 年，高斯证明正十七边形可以用尺规作图。这一结果惊人之处在于：正十七边形不是古希腊几何中常见的低阶图形，却仍然落在尺规可作的范围内。
-
-关键事实是 17 是费马素数：
-
-$$
-17 = 2^{2^2} + 1
-$$
-
-高斯的结果说明，如果奇素数 $p$ 是费马素数，那么正 $p$ 边形可作。
-
-## 意义
-
-这不是单纯的几何技巧，而是几何、复数根和域扩张之间的联系：
-
-$$
-\\zeta_{17}=e^{2\\pi i/17}
-$$
-
-构造正十七边形，本质上是在构造单位根的实部。`,
-  },
-  {
-    id: "atoms",
-    title: "尺规作图原子操作",
-    eyebrow: "工具能做什么",
-    content: `# 尺规作图原子操作
-
-尺规作图允许有限次执行下面的原子操作：
-
-| 操作 | 几何含义 |
-| --- | --- |
-| 过两点作直线 | 生成一条直线 |
-| 以一点为圆心、过另一点作圆 | 生成一个圆 |
-| 求两条直线交点 | 得到新点 |
-| 求直线与圆的交点 | 得到新点 |
-| 求两个圆的交点 | 得到新点 |
-
-每一步最多引入一次平方根。因此可作数总处在反复二次扩张中：
-
-$$
-\\mathbb{Q}=K_0\\subset K_1\\subset\\cdots\\subset K_m
-$$
-
-其中每一步满足
-
-$$
-[K_{j+1}:K_j]=2
-$$`,
-  },
-  {
-    id: "abstraction",
-    title: "问题的抽象",
-    eyebrow: "从几何到代数",
-    content: `# 问题的抽象
-
-将单位圆放在复平面上。正 $n$ 边形的顶点可以写成：
-
-$$
-1,\\ \\zeta_n,\\ \\zeta_n^2,\\ldots,\\zeta_n^{n-1}
-$$
-
-其中
-
-$$
-\\zeta_n=e^{2\\pi i/n}
-$$
-
-要作出正 $n$ 边形，等价于能构造
-
-$$
-\\cos\\frac{2\\pi}{n}
-$$
-
-因为
-
-$$
-\\zeta_n + \\zeta_n^{-1}=2\\cos\\frac{2\\pi}{n}
-$$
-
-于是几何问题转化为：某个代数数是否能通过有限次平方根构造出来。`,
-  },
-  {
-    id: "necessity",
-    title: "猜想和必要性证明",
-    eyebrow: "为什么会有限制",
-    content: `# 猜想和必要性证明
-
-一个数若可由尺规作图得到，则它所在的域扩张次数必须是 2 的幂。
-
-因此正 $n$ 边形可作时，相关的代数扩张次数应满足：
-
-$$
-\\varphi(n)=2^k \\cdot m
-$$
-
-在典型的奇素数情形 $n=p$ 下：
-
-$$
-\\varphi(p)=p-1
-$$
-
-若正 $p$ 边形可作，则必须有
-
-$$
-p-1=2^k
-$$
-
-也就是说
-
-$$
-p=2^k+1
-$$
-
-进一步可以推出 $k$ 本身必须是 2 的幂，所以 $p$ 必须是费马素数：
-
-$$
-p=2^{2^r}+1
-$$`,
-  },
-  {
-    id: "sufficiency",
-    title: "充分性证明",
-    eyebrow: "十七的特殊结构",
-    content: `# 充分性证明
-
-对 $p=17$，有
-
-$$
-\\varphi(17)=16=2^4
-$$
-
-这意味着单位根的伽罗瓦群阶数是 2 的幂。它可以被分解为一串二次关系，从而把
-
-$$
-\\cos\\frac{2\\pi}{17}
-$$
-
-写成嵌套平方根。
-
-一种经典表达会出现如下结构：
-
-$$
-16\\cos\\frac{2\\pi}{17}
-=-1+\\sqrt{17}+\\sqrt{34-2\\sqrt{17}}+2\\sqrt{17+3\\sqrt{17}-\\sqrt{34-2\\sqrt{17}}-2\\sqrt{34+2\\sqrt{17}}}
-$$
-
-表达式看起来复杂，但它只含加减乘除和平方根，所以符合尺规作图能力。`,
-  },
-  {
-    id: "pentagon",
-    title: "实战正五边形",
-    eyebrow: "热身样例",
-    content: `# 实战正五边形
-
-正五边形是理解正十七边形之前的好热身。它同样依赖黄金比：
-
-$$
-\\phi=\\frac{1+\\sqrt{5}}{2}
-$$
-
-在单位圆中，正五边形的中心角为
-
-$$
-\\frac{2\\pi}{5}
-$$
-
-而
-
-$$
-\\cos\\frac{2\\pi}{5}=\\frac{\\sqrt{5}-1}{4}
-$$
-
-这个表达式只含平方根，所以可以尺规作图。正十七边形的思路更长，但代数本质相同：把目标角的余弦拆成嵌套平方根。`,
-  },
-];
+const initialSections = projectSections;
+const fallbackMarkdownFiles = import.meta.glob("./data/markdown/*.md", {
+  eager: true,
+  import: "default",
+  query: "?raw",
+});
 
 function loadSections() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
-    if (!Array.isArray(saved)) return initialSections;
+  return ensureProblemImageExample(cloneInitialSections().map((section) => ({
+    ...section,
+    content: getFallbackMarkdownContent(section.markdownFile),
+  })));
+}
 
-    return initialSections.map((section) => {
-      const savedSection = saved.find((item) => item.id === section.id);
-      return savedSection?.content
-        ? { ...section, content: savedSection.content }
-        : section;
-    });
-  } catch {
-    return initialSections;
+function cloneInitialSections() {
+  return initialSections.map((section, index) => normalizeSection(section, index));
+}
+
+function sanitizeMarkdownFileName(value, fallback = "section.md") {
+  const cleaned = String(value || "")
+    .trim()
+    .replace(/\\/g, "/")
+    .split("/")
+    .filter(Boolean)
+    .pop()
+    ?.replace(/[^\p{L}\p{N}._-]/gu, "-")
+    .replace(/-+/g, "-")
+    .replace(/^\.+/, "")
+    .replace(/\.+$/, "");
+
+  const fileName = cleaned || fallback;
+  return fileName.toLowerCase().endsWith(".md") ? fileName : `${fileName}.md`;
+}
+
+function normalizeSection(section, index, usedMarkdownFiles = new Set()) {
+  const id = typeof section.id === "string" && section.id.trim() ? section.id : `section-${index + 1}`;
+  const markdownFile = makeUniqueMarkdownFileName(
+    section.markdownFile || `${id}.md`,
+    usedMarkdownFiles
+  );
+  usedMarkdownFiles.add(markdownFile);
+
+  return {
+    id,
+    title: typeof section.title === "string" ? section.title : `目录 ${index + 1}`,
+    eyebrow: typeof section.eyebrow === "string" ? section.eyebrow : "",
+    markdownFile,
+    content: typeof section.content === "string" ? section.content : "",
+  };
+}
+
+function normalizeSections(sections) {
+  const usedMarkdownFiles = new Set();
+  return sections.map((section, index) => normalizeSection(section, index, usedMarkdownFiles));
+}
+
+function serializeSections(sections) {
+  return normalizeSections(sections).map(({ id, title, eyebrow, markdownFile }) => ({
+    id,
+    title,
+    eyebrow,
+    markdownFile,
+  }));
+}
+
+function makeUniqueMarkdownFileName(value, usedMarkdownFiles) {
+  const markdownFile = sanitizeMarkdownFileName(value);
+  if (!usedMarkdownFiles.has(markdownFile)) return markdownFile;
+
+  const extension = ".md";
+  const baseName = markdownFile.endsWith(extension)
+    ? markdownFile.slice(0, -extension.length)
+    : markdownFile;
+  let index = 2;
+  let candidate = `${baseName}-${index}${extension}`;
+
+  while (usedMarkdownFiles.has(candidate)) {
+    index += 1;
+    candidate = `${baseName}-${index}${extension}`;
   }
+
+  return candidate;
+}
+
+function getFallbackMarkdownContent(markdownFile) {
+  return fallbackMarkdownFiles[`./data/markdown/${markdownFile}`] ?? "";
+}
+
+function markdownApiPath(markdownFile) {
+  return `${MARKDOWN_API_BASE_PATH}/${encodeURIComponent(markdownFile)}`;
+}
+
+function createSectionId() {
+  return `section-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function getSectionTitle(section) {
+  return section?.title?.trim() || "未命名目录";
+}
+
+function ensureProblemImageExample(sections) {
+  return sections.map((section) => {
+    if (section.id !== "problem") {
+      return section;
+    }
+
+    if (section.content.includes(PROBLEM_IMAGE_FILE)) {
+      return section;
+    }
+
+    if (section.content.includes(OLD_PROBLEM_IMAGE_FILE)) {
+      const replacedContent = section.content
+        .replace(OLD_PROBLEM_IMAGE_MARKDOWN, PROBLEM_IMAGE_MARKDOWN)
+        .replaceAll(OLD_PROBLEM_IMAGE_FILE, PROBLEM_IMAGE_FILE)
+        .replaceAll("高斯墓碑与正十七边形示意图", "布伦瑞克高斯纪念碑上的 17 角星")
+        .replaceAll("据传高斯希望墓碑上刻正十七边形，但这个愿望没有实际实现。图中是为了说明这个故事而制作的示意图，不是实物照片。", "图中是布伦瑞克高斯纪念碑上的 17 角星意象。它常被用来纪念高斯对正十七边形可作性的发现。图片：Brunswyk / [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Braunschweig_Gauss-Denkmal_17-eckiger_Stern.jpg)，CC BY-SA 3.0 / GFDL。");
+
+      return {
+        ...section,
+        content: replacedContent.includes(PROBLEM_IMAGE_FILE)
+          ? replacedContent
+          : `${replacedContent.trimEnd()}${PROBLEM_IMAGE_MARKDOWN}`,
+      };
+    }
+
+    return {
+      ...section,
+      content: `${section.content.trimEnd()}${PROBLEM_IMAGE_MARKDOWN}`,
+    };
+  });
+}
+
+function isExternalImageSrc(src) {
+  return /^(https?:)?\/\//i.test(src) || /^(data|blob):/i.test(src);
+}
+
+function resolveMarkdownImageSrc(src = "") {
+  const trimmedSrc = src.trim();
+  if (!trimmedSrc || isExternalImageSrc(trimmedSrc) || trimmedSrc.startsWith("/")) {
+    return trimmedSrc;
+  }
+
+  const normalizedSrc = trimmedSrc.replace(/^\.?\//, "");
+  if (normalizedSrc.startsWith("content-images/")) {
+    return `/${normalizedSrc}`;
+  }
+
+  return `/content-images/${normalizedSrc}`;
+}
+
+function MarkdownImage({ src, alt = "", title }) {
+  return (
+    <img
+      src={resolveMarkdownImageSrc(src)}
+      alt={alt}
+      title={title}
+      loading="lazy"
+      decoding="async"
+    />
+  );
 }
 
 function seededNoise(seed) {
@@ -460,10 +420,24 @@ function DoodleLayer({ onExit }) {
 }
 
 function App() {
-  const [sections, setSections] = useState(loadSections);
-  const [activeId, setActiveId] = useState(initialSections[0].id);
+  const skipNextSaveRef = useRef(true);
+  const saveTimeoutRef = useRef(null);
+  const [initialState] = useState(() => {
+    const loadedSections = loadSections();
+    return {
+      activeId: loadedSections[0]?.id ?? initialSections[0].id,
+      sections: loadedSections,
+    };
+  });
+  const [sections, setSections] = useState(initialState.sections);
+  const [activeId, setActiveId] = useState(initialState.activeId);
   const [mode, setMode] = useState("read");
+  const [directoryMode, setDirectoryMode] = useState(false);
   const [doodleMode, setDoodleMode] = useState(false);
+  const [persistenceState, setPersistenceState] = useState({
+    available: false,
+    message: "正在连接内容文件",
+  });
 
   const activeSection = useMemo(
     () => sections.find((section) => section.id === activeId) ?? sections[0],
@@ -471,11 +445,136 @@ function App() {
   );
 
   useEffect(() => {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(sections.map(({ id, content }) => ({ id, content })))
-    );
-  }, [sections]);
+    let cancelled = false;
+
+    async function loadProjectSections() {
+      try {
+        const response = await fetch(SECTIONS_API_PATH);
+        if (!response.ok) {
+          throw new Error(`Failed to load sections: ${response.status}`);
+        }
+
+        const data = await response.json();
+        if (!Array.isArray(data)) {
+          throw new Error("Sections response is not an array.");
+        }
+
+        if (cancelled) return;
+
+        const sectionMetas = normalizeSections(data);
+        const loadedSections = ensureProblemImageExample(
+          await Promise.all(
+            sectionMetas.map(async (section) => {
+              try {
+                const markdownResponse = await fetch(markdownApiPath(section.markdownFile));
+                if (!markdownResponse.ok) {
+                  throw new Error(`Failed to load ${section.markdownFile}`);
+                }
+
+                return {
+                  ...section,
+                  content: await markdownResponse.text(),
+                };
+              } catch {
+                return {
+                  ...section,
+                  content: getFallbackMarkdownContent(section.markdownFile),
+                };
+              }
+            })
+          )
+        );
+        skipNextSaveRef.current = true;
+        setSections(loadedSections);
+        setActiveId((currentActiveId) =>
+          loadedSections.some((section) => section.id === currentActiveId)
+            ? currentActiveId
+            : loadedSections[0]?.id ?? ""
+        );
+        setPersistenceState({
+          available: true,
+          message: "已连接工程内容文件",
+        });
+      } catch {
+        if (cancelled) return;
+        setPersistenceState({
+          available: false,
+          message: "内容文件未连接",
+        });
+      }
+    }
+
+    loadProjectSections();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!persistenceState.available) return undefined;
+
+    if (skipNextSaveRef.current) {
+      skipNextSaveRef.current = false;
+      return undefined;
+    }
+
+    window.clearTimeout(saveTimeoutRef.current);
+    setPersistenceState((current) => ({
+      ...current,
+      message: "正在保存到工程文件",
+    }));
+
+    saveTimeoutRef.current = window.setTimeout(async () => {
+      try {
+        const sectionsResponse = await fetch(SECTIONS_API_PATH, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(serializeSections(sections)),
+        });
+
+        if (!sectionsResponse.ok) {
+          throw new Error(`Failed to save sections: ${sectionsResponse.status}`);
+        }
+
+        await Promise.all(
+          normalizeSections(sections).map(async (section) => {
+            const markdownResponse = await fetch(markdownApiPath(section.markdownFile), {
+              method: "PUT",
+              headers: {
+                "Content-Type": "text/markdown; charset=utf-8",
+              },
+              body: section.content,
+            });
+
+            if (!markdownResponse.ok) {
+              throw new Error(`Failed to save markdown: ${section.markdownFile}`);
+            }
+          })
+        );
+
+        setPersistenceState({
+          available: true,
+          message: "已保存到工程文件",
+        });
+      } catch {
+        setPersistenceState({
+          available: true,
+          message: "保存失败",
+        });
+      }
+    }, 350);
+
+    return () => window.clearTimeout(saveTimeoutRef.current);
+  }, [persistenceState.available, sections]);
+
+  useEffect(() => {
+    if (!sections.some((section) => section.id === activeId)) {
+      setActiveId(sections[0]?.id ?? "");
+    }
+  }, [activeId, sections]);
 
   function updateActiveContent(content) {
     setSections((current) =>
@@ -483,6 +582,92 @@ function App() {
         section.id === activeSection.id ? { ...section, content } : section
       )
     );
+  }
+
+  function updateSectionMeta(sectionId, field, value) {
+    setSections((current) =>
+      current.map((section) =>
+        section.id === sectionId ? { ...section, [field]: value } : section
+      )
+    );
+  }
+
+  function moveSection(sectionId, offset) {
+    setSections((current) => {
+      const index = current.findIndex((section) => section.id === sectionId);
+      const nextIndex = index + offset;
+      if (index < 0 || nextIndex < 0 || nextIndex >= current.length) return current;
+
+      const next = [...current];
+      [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
+      return next;
+    });
+  }
+
+  function addSection() {
+    const requestedMarkdownFile = window.prompt(
+      "请输入新目录的 Markdown 文件名",
+      `section-${sections.length + 1}.md`
+    );
+
+    if (requestedMarkdownFile === null) return;
+
+    const usedMarkdownFiles = new Set(sections.map((section) => section.markdownFile));
+    const markdownFile = makeUniqueMarkdownFileName(requestedMarkdownFile, usedMarkdownFiles);
+    const newSection = {
+      id: createSectionId(),
+      title: `新目录 ${sections.length + 1}`,
+      eyebrow: "",
+      markdownFile,
+      content: "",
+    };
+
+    setSections((current) => [...current, newSection]);
+    setActiveId(newSection.id);
+    setMode("edit");
+    setDirectoryMode(true);
+  }
+
+  async function deleteSection(sectionId) {
+    if (sections.length <= 1) return;
+
+    const section = sections.find((item) => item.id === sectionId);
+    if (!section) return;
+
+    const confirmed = window.confirm(
+      `删除目录“${getSectionTitle(section)}”？对应的 Markdown 文件 ${section.markdownFile} 也会被删除。`
+    );
+
+    if (!confirmed) return;
+
+    const nextSections = sections.filter((item) => item.id !== sectionId);
+    setSections(nextSections);
+
+    if (activeId === sectionId) {
+      setActiveId(nextSections[0]?.id ?? "");
+    }
+
+    if (!persistenceState.available) return;
+
+    try {
+      const response = await fetch(markdownApiPath(section.markdownFile), {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to delete markdown: ${section.markdownFile}`);
+      }
+
+      setPersistenceState({
+        available: true,
+        message: "已删除 Markdown 文件",
+      });
+    } catch {
+      setPersistenceState({
+        available: true,
+        message: "Markdown 文件删除失败",
+      });
+    }
   }
 
   return (
@@ -495,28 +680,103 @@ function App() {
           </div>
         </div>
 
-        <nav className="section-nav">
-          {sections.map((section, index) => (
-            <button
-              type="button"
-              key={section.id}
-              className={section.id === activeId ? "nav-item active" : "nav-item"}
-              onClick={() => setActiveId(section.id)}
-            >
-              <span className="nav-index">{String(index + 1).padStart(2, "0")}</span>
-              <span>
-                <strong>{section.title}</strong>
-                <small>{section.eyebrow}</small>
-              </span>
+        <div className="sidebar-tools">
+          <button
+            type="button"
+            className={directoryMode ? "sidebar-tool active" : "sidebar-tool"}
+            onClick={() => setDirectoryMode((current) => !current)}
+          >
+            {directoryMode ? <Check size={17} aria-hidden="true" /> : <Settings2 size={17} aria-hidden="true" />}
+            {directoryMode ? "完成管理" : "目录管理"}
+          </button>
+        </div>
+
+        {directoryMode ? (
+          <div className="directory-editor-list" aria-label="目录管理">
+            {sections.map((section, index) => (
+              <div
+                key={section.id}
+                className={section.id === activeId ? "directory-editor-row active" : "directory-editor-row"}
+              >
+                <div className="directory-move-controls">
+                  <button
+                    type="button"
+                    onClick={() => moveSection(section.id, -1)}
+                    disabled={index === 0}
+                    aria-label={`上移 ${getSectionTitle(section)}`}
+                    title="上移"
+                  >
+                    <ArrowUp size={15} aria-hidden="true" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => moveSection(section.id, 1)}
+                    disabled={index === sections.length - 1}
+                    aria-label={`下移 ${getSectionTitle(section)}`}
+                    title="下移"
+                  >
+                    <ArrowDown size={15} aria-hidden="true" />
+                  </button>
+                </div>
+                <div className="directory-fields">
+                  <input
+                    value={section.title}
+                    onFocus={() => setActiveId(section.id)}
+                    onChange={(event) => updateSectionMeta(section.id, "title", event.target.value)}
+                    placeholder="目录标题"
+                    aria-label={`${getSectionTitle(section)} 标题`}
+                  />
+                  <input
+                    value={section.eyebrow}
+                    onFocus={() => setActiveId(section.id)}
+                    onChange={(event) => updateSectionMeta(section.id, "eyebrow", event.target.value)}
+                    placeholder="目录描述"
+                    aria-label={`${getSectionTitle(section)} 描述`}
+                  />
+                  <span className="directory-file-name">{section.markdownFile}</span>
+                </div>
+                <button
+                  type="button"
+                  className="directory-delete-button"
+                  onClick={() => deleteSection(section.id)}
+                  disabled={sections.length <= 1}
+                  aria-label={`删除 ${getSectionTitle(section)}`}
+                  title="删除"
+                >
+                  <Trash2 size={15} aria-hidden="true" />
+                </button>
+              </div>
+            ))}
+
+            <button type="button" className="add-section-button" onClick={addSection}>
+              <Plus size={17} aria-hidden="true" />
+              新增目录
             </button>
-          ))}
-        </nav>
+          </div>
+        ) : (
+          <nav className="section-nav">
+            {sections.map((section, index) => (
+              <button
+                type="button"
+                key={section.id}
+                className={section.id === activeId ? "nav-item active" : "nav-item"}
+                onClick={() => setActiveId(section.id)}
+              >
+                <span className="nav-index">{String(index + 1).padStart(2, "0")}</span>
+                <span>
+                  <strong>{getSectionTitle(section)}</strong>
+                  {section.eyebrow.trim() ? <small>{section.eyebrow}</small> : null}
+                </span>
+              </button>
+            ))}
+          </nav>
+        )}
       </aside>
 
       <section className="workspace">
         <header className="topbar">
           <div>
-            <h2>{activeSection.title}</h2>
+            <h2>{getSectionTitle(activeSection)}</h2>
           </div>
 
           <div className="toolbar" aria-label="阅读和编辑控制">
@@ -543,6 +803,13 @@ function App() {
               <Brush size={18} aria-hidden="true" />
               随意写
             </button>
+
+            <span
+              className={persistenceState.available ? "persistence-pill" : "persistence-pill warning"}
+              aria-live="polite"
+            >
+              {persistenceState.message}
+            </span>
           </div>
         </header>
 
@@ -564,7 +831,7 @@ function App() {
                 spellCheck="false"
                 value={activeSection.content}
                 onChange={(event) => updateActiveContent(event.target.value)}
-                aria-label={`${activeSection.title} Markdown 内容`}
+                aria-label={`${getSectionTitle(activeSection)} Markdown 内容`}
               />
             </div>
           ) : (
@@ -572,6 +839,7 @@ function App() {
               <ReactMarkdown
                 remarkPlugins={[remarkGfm, remarkMath]}
                 rehypePlugins={[[rehypeKatex, { strict: false, throwOnError: false }]]}
+                components={{ img: MarkdownImage }}
               >
                 {activeSection.content}
               </ReactMarkdown>

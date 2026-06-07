@@ -39,6 +39,7 @@ body {
 }
 
 button,
+input,
 textarea {
   font: inherit;
 }
@@ -108,6 +109,9 @@ button {
 .section-nav {
   display: grid;
   gap: 8px;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 2px;
 }
 
 .nav-item {
@@ -165,6 +169,152 @@ button {
   font-family: Inter, ui-sans-serif, system-ui, sans-serif;
   font-size: 12px;
   line-height: 1.3;
+}
+
+.sidebar-tools {
+  display: grid;
+}
+
+.sidebar-tool,
+.add-section-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(251, 248, 242, 0.72);
+  color: var(--ink);
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.sidebar-tool:hover,
+.sidebar-tool.active,
+.add-section-button:hover {
+  border-color: var(--earth-soft);
+  background: var(--paper);
+}
+
+.directory-editor-list {
+  display: grid;
+  gap: 10px;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.directory-editor-row {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 34px;
+  gap: 9px;
+  align-items: stretch;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(251, 248, 242, 0.58);
+}
+
+.directory-editor-row.active {
+  border-color: var(--earth-soft);
+  box-shadow: inset 3px 0 0 var(--sage);
+}
+
+.directory-move-controls {
+  display: grid;
+  gap: 6px;
+}
+
+.directory-move-controls button {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 32px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fffdf8;
+  color: var(--earth);
+}
+
+.directory-move-controls button:hover {
+  border-color: var(--earth-soft);
+}
+
+.directory-move-controls button:disabled {
+  color: #c7b9a8;
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.directory-delete-button {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 32px;
+  align-self: start;
+  border: 1px solid rgba(151, 34, 24, 0.22);
+  border-radius: 6px;
+  background: #fffdf8;
+  color: #7a2018;
+}
+
+.directory-delete-button:hover {
+  border-color: rgba(151, 34, 24, 0.46);
+}
+
+.directory-delete-button:disabled {
+  color: #c7b9a8;
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.directory-fields {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.directory-fields input {
+  width: 100%;
+  min-width: 0;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  outline: none;
+  background: #fffdf8;
+  color: var(--ink);
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 13px;
+}
+
+.directory-fields input:first-child {
+  font-weight: 750;
+}
+
+.directory-fields input:focus {
+  border-color: var(--sage);
+  box-shadow: 0 0 0 3px rgba(103, 116, 100, 0.1);
+}
+
+.directory-file-name {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 11px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.add-section-button {
+  width: 100%;
+  margin-top: 2px;
 }
 
 .workspace {
@@ -243,6 +393,28 @@ button {
 
 .draw-toggle {
   border-color: rgba(151, 34, 24, 0.26);
+  color: #6f1712;
+}
+
+.persistence-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0 11px;
+  border: 1px solid rgba(103, 116, 100, 0.26);
+  border-radius: 999px;
+  background: rgba(251, 248, 242, 0.72);
+  color: var(--sage);
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.persistence-pill.warning {
+  border-color: rgba(151, 34, 24, 0.28);
   color: #6f1712;
 }
 
@@ -366,6 +538,17 @@ button {
   border-radius: 5px;
   background: #f3ebdf;
   font-size: 0.9em;
+}
+
+.reading-view img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 28px auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fffdf8;
+  box-shadow: 0 12px 34px rgba(83, 62, 38, 0.08);
 }
 
 .reading-view blockquote {
@@ -551,7 +734,8 @@ body.doodle-active {
 
   .toolbar,
   .segmented,
-  .ghost-button {
+  .ghost-button,
+  .persistence-pill {
     width: 100%;
   }
 

@@ -1,0 +1,44 @@
+[
+  {
+    "id": "problem",
+    "title": "问题提出",
+    "eyebrow": "从一个圆开始",
+    "markdownFile": "problem.md"
+  },
+  {
+    "id": "gauss",
+    "title": "历史和高斯的贡献",
+    "eyebrow": "1796 年的发现",
+    "markdownFile": "gauss.md"
+  },
+  {
+    "id": "atoms",
+    "title": "尺规作图原子操作",
+    "eyebrow": "工具能做什么",
+    "markdownFile": "atoms.md"
+  },
+  {
+    "id": "abstraction",
+    "title": "问题的抽象",
+    "eyebrow": "从几何到代数",
+    "markdownFile": "abstraction.md"
+  },
+  {
+    "id": "necessity",
+    "title": "猜想和必要性证明",
+    "eyebrow": "为什么会有限制",
+    "markdownFile": "necessity.md"
+  },
+  {
+    "id": "sufficiency",
+    "title": "充分性证明",
+    "eyebrow": "十七的特殊结构",
+    "markdownFile": "sufficiency.md"
+  },
+  {
+    "id": "pentagon",
+    "title": "实战正五边形",
+    "eyebrow": "热身样例",
+    "markdownFile": "pentagon.md"
+  }
+]
