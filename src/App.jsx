@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeKatex from "rehype-katex";
+import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import projectSections from "./data/sections.json";
@@ -124,12 +125,53 @@ function markdownApiPath(markdownFile) {
   return `${MARKDOWN_API_BASE_PATH}/${encodeURIComponent(markdownFile)}`;
 }
 
+function getPersistedSectionMetas(sections) {
+  return normalizeSections(sections).map(({ id, title, eyebrow, markdownFile }) => ({
+    id,
+    title,
+    eyebrow,
+    markdownFile,
+  }));
+}
+
+async function saveSectionMetas(sections) {
+  const sectionsResponse = await fetch(SECTIONS_API_PATH, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(getPersistedSectionMetas(sections)),
+  });
+
+  if (!sectionsResponse.ok) {
+    throw new Error(`Failed to save sections: ${sectionsResponse.status}`);
+  }
+}
+
+async function deleteMarkdownFile(markdownFile) {
+  const deleteResponse = await fetch(markdownApiPath(markdownFile), {
+    method: "DELETE",
+  });
+
+  if (!deleteResponse.ok) {
+    throw new Error(`Failed to delete markdown: ${markdownFile}`);
+  }
+}
+
 function createSectionId() {
   return `section-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 function getSectionTitle(section) {
   return section?.title?.trim() || "未命名目录";
+}
+
+function createNewSectionDraft(sectionCount) {
+  return {
+    title: `新目录 ${sectionCount + 1}`,
+    eyebrow: "",
+    markdownFile: `section-${sectionCount + 1}.md`,
+  };
 }
 
 function ensureProblemImageExample(sections) {
@@ -427,6 +469,10 @@ function App() {
   const [mode, setMode] = useState("read");
   const [directoryMode, setDirectoryMode] = useState(false);
   const [markdownFileDrafts, setMarkdownFileDrafts] = useState({});
+  const [newSectionDraft, setNewSectionDraft] = useState(() =>
+    createNewSectionDraft(initialState.sections.length)
+  );
+  const [newSectionDialogOpen, setNewSectionDialogOpen] = useState(false);
   const [doodleMode, setDoodleMode] = useState(false);
   const [persistenceState, setPersistenceState] = useState({
     available: false,
@@ -528,24 +574,7 @@ function App() {
     saveTimeoutRef.current = window.setTimeout(async () => {
       try {
         const normalizedSections = normalizeSections(sections);
-        const sectionsResponse = await fetch(SECTIONS_API_PATH, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(
-            normalizedSections.map(({ id, title, eyebrow, markdownFile }) => ({
-              id,
-              title,
-              eyebrow,
-              markdownFile,
-            }))
-          ),
-        });
-
-        if (!sectionsResponse.ok) {
-          throw new Error(`Failed to save sections: ${sectionsResponse.status}`);
-        }
+        await saveSectionMetas(normalizedSections);
 
         await Promise.all(
           normalizedSections.map(async (section) => {
@@ -578,14 +607,7 @@ function App() {
           }
 
           try {
-            const deleteResponse = await fetch(markdownApiPath(markdownFile), {
-              method: "DELETE",
-            });
-
-            if (!deleteResponse.ok) {
-              throw new Error(`Failed to delete markdown: ${markdownFile}`);
-            }
-
+            await deleteMarkdownFile(markdownFile);
             resolvedMarkdownDeletes.add(markdownFile);
           } catch {
             failedMarkdownDeletes.add(markdownFile);
@@ -692,6 +714,29 @@ function App() {
     event.currentTarget.blur();
   }
 
+  function openNewSectionDialog() {
+    setNewSectionDraft(createNewSectionDraft(sections.length));
+    setNewSectionDialogOpen(true);
+  }
+
+  function closeNewSectionDialog() {
+    setNewSectionDialogOpen(false);
+  }
+
+  function updateNewSectionDraft(field, value) {
+    setNewSectionDraft((current) => ({
+      ...current,
+      [field]: value,
+    }));
+  }
+
+  function handleNewSectionDialogKeyDown(event) {
+    if (event.key !== "Escape") return;
+
+    event.preventDefault();
+    closeNewSectionDialog();
+  }
+
   function moveSection(sectionId, offset) {
     setSections((current) => {
       const index = current.findIndex((section) => section.id === sectionId);
@@ -704,28 +749,33 @@ function App() {
     });
   }
 
-  function addSection() {
-    const requestedMarkdownFile = window.prompt(
-      "请输入新目录的 Markdown 文件名",
-      `section-${sections.length + 1}.md`
+  function addSection(event) {
+    event.preventDefault();
+
+    const usedMarkdownFiles = new Set(
+      sections.map((section) => sanitizeMarkdownFileName(section.markdownFile))
     );
-
-    if (requestedMarkdownFile === null) return;
-
-    const usedMarkdownFiles = new Set(sections.map((section) => section.markdownFile));
-    const markdownFile = makeUniqueMarkdownFileName(requestedMarkdownFile, usedMarkdownFiles);
+    const fallbackTitle = `新目录 ${sections.length + 1}`;
+    const fallbackMarkdownFile = `section-${sections.length + 1}.md`;
+    const markdownFile = makeUniqueMarkdownFileName(
+      newSectionDraft.markdownFile,
+      usedMarkdownFiles,
+      fallbackMarkdownFile
+    );
+    const title = newSectionDraft.title.trim() || fallbackTitle;
     const newSection = {
       id: createSectionId(),
-      title: `新目录 ${sections.length + 1}`,
-      eyebrow: "",
+      title,
+      eyebrow: newSectionDraft.eyebrow.trim(),
       markdownFile,
-      content: "",
+      content: `# ${title}\n`,
     };
 
     setSections((current) => [...current, newSection]);
     setActiveId(newSection.id);
     setMode("edit");
     setDirectoryMode(true);
+    setNewSectionDialogOpen(false);
   }
 
   async function deleteSection(sectionId) {
@@ -734,6 +784,14 @@ function App() {
     const section = sections.find((item) => item.id === sectionId);
     if (!section) return;
 
+    if (!persistenceState.available) {
+      setPersistenceState((current) => ({
+        ...current,
+        message: "内容文件未连接，无法删除目录",
+      }));
+      return;
+    }
+
     const confirmed = window.confirm(
       `删除目录“${getSectionTitle(section)}”？对应的 Markdown 文件 ${section.markdownFile} 也会被删除。`
     );
@@ -741,6 +799,11 @@ function App() {
     if (!confirmed) return;
 
     const nextSections = sections.filter((item) => item.id !== sectionId);
+    const markdownFileToDelete = sanitizeMarkdownFileName(section.markdownFile);
+    pendingMarkdownDeletesRef.current = [
+      ...pendingMarkdownDeletesRef.current,
+      markdownFileToDelete,
+    ];
     setSections(nextSections);
     clearMarkdownFileDraft(sectionId);
 
@@ -748,25 +811,34 @@ function App() {
       setActiveId(nextSections[0]?.id ?? "");
     }
 
-    if (!persistenceState.available) return;
-
     try {
-      const response = await fetch(markdownApiPath(section.markdownFile), {
-        method: "DELETE",
+      setPersistenceState({
+        available: true,
+        message: "正在删除目录",
       });
 
-      if (!response.ok) {
-        throw new Error(`Failed to delete markdown: ${section.markdownFile}`);
+      await saveSectionMetas(nextSections);
+      try {
+        await deleteMarkdownFile(markdownFileToDelete);
+        pendingMarkdownDeletesRef.current = pendingMarkdownDeletesRef.current.filter(
+          (markdownFile) => markdownFile !== markdownFileToDelete
+        );
+      } catch {
+        setPersistenceState({
+          available: true,
+          message: "目录已删除，Markdown 文件删除失败",
+        });
+        return;
       }
 
       setPersistenceState({
         available: true,
-        message: "已删除 Markdown 文件",
+        message: "已删除目录",
       });
     } catch {
       setPersistenceState({
         available: true,
-        message: "Markdown 文件删除失败",
+        message: "目录删除保存失败",
       });
     }
   }
@@ -850,7 +922,7 @@ function App() {
                   type="button"
                   className="directory-delete-button"
                   onClick={() => deleteSection(section.id)}
-                  disabled={sections.length <= 1}
+                  disabled={sections.length <= 1 || !persistenceState.available}
                   aria-label={`删除 ${getSectionTitle(section)}`}
                   title="删除"
                 >
@@ -859,7 +931,7 @@ function App() {
               </div>
             ))}
 
-            <button type="button" className="add-section-button" onClick={addSection}>
+            <button type="button" className="add-section-button" onClick={openNewSectionDialog}>
               <Plus size={17} aria-hidden="true" />
               新增目录
             </button>
@@ -886,8 +958,11 @@ function App() {
 
       <section className="workspace">
         <header className="topbar">
-          <div>
-            <h2>{getSectionTitle(activeSection)}</h2>
+          <div className="chapter-meta" aria-hidden="true">
+            <span>
+              <PenLine size={16} />
+              markdown + latex
+            </span>
           </div>
 
           <div className="toolbar" aria-label="阅读和编辑控制">
@@ -925,13 +1000,6 @@ function App() {
         </header>
 
         <div className="content-frame">
-          <div className="chapter-meta" aria-hidden="true">
-            <span>
-              <PenLine size={16} />
-              markdown + latex
-            </span>
-          </div>
-
           {mode === "edit" ? (
             <div className="editor-panel">
               <div className="editor-heading">
@@ -948,7 +1016,7 @@ function App() {
           ) : (
             <article className="reading-view">
               <ReactMarkdown
-                remarkPlugins={[remarkGfm, remarkMath]}
+                remarkPlugins={[remarkGfm, remarkBreaks, remarkMath]}
                 rehypePlugins={[[rehypeKatex, { strict: false, throwOnError: false }]]}
                 components={{ img: MarkdownImage }}
               >
@@ -960,6 +1028,72 @@ function App() {
       </section>
 
       {doodleMode ? <DoodleLayer onExit={() => setDoodleMode(false)} /> : null}
+
+      {newSectionDialogOpen ? (
+        <div className="modal-backdrop">
+          <form
+            className="section-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="new-section-dialog-title"
+            onSubmit={addSection}
+            onKeyDown={handleNewSectionDialogKeyDown}
+          >
+            <div className="section-dialog-header">
+              <h2 id="new-section-dialog-title">新增目录</h2>
+              <button
+                type="button"
+                className="section-dialog-close"
+                onClick={closeNewSectionDialog}
+                aria-label="关闭新增目录弹窗"
+                title="关闭"
+              >
+                <X size={18} aria-hidden="true" />
+              </button>
+            </div>
+
+            <div className="section-form">
+              <label>
+                <span>目录名字</span>
+                <input
+                  autoFocus
+                  value={newSectionDraft.title}
+                  onChange={(event) => updateNewSectionDraft("title", event.target.value)}
+                  placeholder="目录名字"
+                />
+              </label>
+              <label>
+                <span>目录描述</span>
+                <input
+                  value={newSectionDraft.eyebrow}
+                  onChange={(event) => updateNewSectionDraft("eyebrow", event.target.value)}
+                  placeholder="目录描述"
+                />
+              </label>
+              <label>
+                <span>Markdown 文件名</span>
+                <input
+                  className="section-dialog-file-input"
+                  spellCheck="false"
+                  value={newSectionDraft.markdownFile}
+                  onChange={(event) => updateNewSectionDraft("markdownFile", event.target.value)}
+                  placeholder="section.md"
+                />
+              </label>
+            </div>
+
+            <div className="section-dialog-actions">
+              <button type="button" className="section-dialog-secondary" onClick={closeNewSectionDialog}>
+                取消
+              </button>
+              <button type="submit" className="section-dialog-primary">
+                <Check size={17} aria-hidden="true" />
+                创建目录
+              </button>
+            </div>
+          </form>
+        </div>
+      ) : null}
     </main>
   );
 }
