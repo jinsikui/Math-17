@@ -97,17 +97,8 @@ function normalizeSections(sections) {
   return sections.map((section, index) => normalizeSection(section, index, usedMarkdownFiles));
 }
 
-function serializeSections(sections) {
-  return normalizeSections(sections).map(({ id, title, eyebrow, markdownFile }) => ({
-    id,
-    title,
-    eyebrow,
-    markdownFile,
-  }));
-}
-
-function makeUniqueMarkdownFileName(value, usedMarkdownFiles) {
-  const markdownFile = sanitizeMarkdownFileName(value);
+function makeUniqueMarkdownFileName(value, usedMarkdownFiles, fallback = "section.md") {
+  const markdownFile = sanitizeMarkdownFileName(value, fallback);
   if (!usedMarkdownFiles.has(markdownFile)) return markdownFile;
 
   const extension = ".md";
@@ -422,6 +413,7 @@ function DoodleLayer({ onExit }) {
 function App() {
   const skipNextSaveRef = useRef(true);
   const saveTimeoutRef = useRef(null);
+  const pendingMarkdownDeletesRef = useRef([]);
   const [initialState] = useState(() => {
     const loadedSections = loadSections();
     return {
@@ -430,9 +422,11 @@ function App() {
     };
   });
   const [sections, setSections] = useState(initialState.sections);
+  const sectionsRef = useRef(initialState.sections);
   const [activeId, setActiveId] = useState(initialState.activeId);
   const [mode, setMode] = useState("read");
   const [directoryMode, setDirectoryMode] = useState(false);
+  const [markdownFileDrafts, setMarkdownFileDrafts] = useState({});
   const [doodleMode, setDoodleMode] = useState(false);
   const [persistenceState, setPersistenceState] = useState({
     available: false,
@@ -443,6 +437,10 @@ function App() {
     () => sections.find((section) => section.id === activeId) ?? sections[0],
     [activeId, sections]
   );
+
+  useEffect(() => {
+    sectionsRef.current = sections;
+  }, [sections]);
 
   useEffect(() => {
     let cancelled = false;
@@ -485,7 +483,9 @@ function App() {
           )
         );
         skipNextSaveRef.current = true;
+        pendingMarkdownDeletesRef.current = [];
         setSections(loadedSections);
+        setMarkdownFileDrafts({});
         setActiveId((currentActiveId) =>
           loadedSections.some((section) => section.id === currentActiveId)
             ? currentActiveId
@@ -527,12 +527,20 @@ function App() {
 
     saveTimeoutRef.current = window.setTimeout(async () => {
       try {
+        const normalizedSections = normalizeSections(sections);
         const sectionsResponse = await fetch(SECTIONS_API_PATH, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(serializeSections(sections)),
+          body: JSON.stringify(
+            normalizedSections.map(({ id, title, eyebrow, markdownFile }) => ({
+              id,
+              title,
+              eyebrow,
+              markdownFile,
+            }))
+          ),
         });
 
         if (!sectionsResponse.ok) {
@@ -540,7 +548,7 @@ function App() {
         }
 
         await Promise.all(
-          normalizeSections(sections).map(async (section) => {
+          normalizedSections.map(async (section) => {
             const markdownResponse = await fetch(markdownApiPath(section.markdownFile), {
               method: "PUT",
               headers: {
@@ -555,9 +563,44 @@ function App() {
           })
         );
 
+        const resolvedMarkdownDeletes = new Set();
+        const failedMarkdownDeletes = new Set();
+        const staleMarkdownFiles = [...new Set(pendingMarkdownDeletesRef.current)];
+
+        for (const markdownFile of staleMarkdownFiles) {
+          const activeMarkdownFiles = new Set(
+            normalizeSections(sectionsRef.current).map((section) => section.markdownFile)
+          );
+
+          if (activeMarkdownFiles.has(markdownFile)) {
+            resolvedMarkdownDeletes.add(markdownFile);
+            continue;
+          }
+
+          try {
+            const deleteResponse = await fetch(markdownApiPath(markdownFile), {
+              method: "DELETE",
+            });
+
+            if (!deleteResponse.ok) {
+              throw new Error(`Failed to delete markdown: ${markdownFile}`);
+            }
+
+            resolvedMarkdownDeletes.add(markdownFile);
+          } catch {
+            failedMarkdownDeletes.add(markdownFile);
+          }
+        }
+
+        pendingMarkdownDeletesRef.current = pendingMarkdownDeletesRef.current.filter(
+          (markdownFile) => !resolvedMarkdownDeletes.has(markdownFile)
+        );
+
         setPersistenceState({
           available: true,
-          message: "已保存到工程文件",
+          message: failedMarkdownDeletes.size > 0
+            ? "已保存，新文件已写入，旧文件删除失败"
+            : "已保存到工程文件",
         });
       } catch {
         setPersistenceState({
@@ -590,6 +633,63 @@ function App() {
         section.id === sectionId ? { ...section, [field]: value } : section
       )
     );
+  }
+
+  function updateMarkdownFileDraft(sectionId, value) {
+    setActiveId(sectionId);
+    setMarkdownFileDrafts((current) => ({
+      ...current,
+      [sectionId]: value,
+    }));
+  }
+
+  function clearMarkdownFileDraft(sectionId) {
+    setMarkdownFileDrafts((current) => {
+      if (!(sectionId in current)) return current;
+
+      const next = { ...current };
+      delete next[sectionId];
+      return next;
+    });
+  }
+
+  function commitMarkdownFileName(sectionId) {
+    const draft = markdownFileDrafts[sectionId];
+    if (draft === undefined) return;
+
+    const section = sections.find((item) => item.id === sectionId);
+    clearMarkdownFileDraft(sectionId);
+    if (!section) return;
+
+    const previousMarkdownFile = sanitizeMarkdownFileName(section.markdownFile);
+    const usedMarkdownFiles = new Set(
+      sections
+        .filter((item) => item.id !== sectionId)
+        .map((item) => sanitizeMarkdownFileName(item.markdownFile))
+    );
+    const markdownFile = makeUniqueMarkdownFileName(draft, usedMarkdownFiles, previousMarkdownFile);
+
+    if (markdownFile !== previousMarkdownFile) {
+      pendingMarkdownDeletesRef.current = [
+        ...pendingMarkdownDeletesRef.current,
+        previousMarkdownFile,
+      ];
+    }
+
+    if (markdownFile === section.markdownFile) return;
+
+    setSections((current) =>
+      current.map((item) =>
+        item.id === sectionId ? { ...item, markdownFile } : item
+      )
+    );
+  }
+
+  function handleMarkdownFileKeyDown(event) {
+    if (event.key !== "Enter") return;
+
+    event.preventDefault();
+    event.currentTarget.blur();
   }
 
   function moveSection(sectionId, offset) {
@@ -642,6 +742,7 @@ function App() {
 
     const nextSections = sections.filter((item) => item.id !== sectionId);
     setSections(nextSections);
+    clearMarkdownFileDraft(sectionId);
 
     if (activeId === sectionId) {
       setActiveId(nextSections[0]?.id ?? "");
@@ -733,7 +834,17 @@ function App() {
                     placeholder="目录描述"
                     aria-label={`${getSectionTitle(section)} 描述`}
                   />
-                  <span className="directory-file-name">{section.markdownFile}</span>
+                  <input
+                    className="directory-file-input"
+                    value={markdownFileDrafts[section.id] ?? section.markdownFile}
+                    spellCheck="false"
+                    onFocus={() => setActiveId(section.id)}
+                    onChange={(event) => updateMarkdownFileDraft(section.id, event.target.value)}
+                    onBlur={() => commitMarkdownFileName(section.id)}
+                    onKeyDown={handleMarkdownFileKeyDown}
+                    placeholder="Markdown 文件名"
+                    aria-label={`${getSectionTitle(section)} Markdown 文件名`}
+                  />
                 </div>
                 <button
                   type="button"

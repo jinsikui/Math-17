@@ -300,16 +300,10 @@ button {
   box-shadow: 0 0 0 3px rgba(103, 116, 100, 0.1);
 }
 
-.directory-file-name {
-  display: block;
-  min-width: 0;
-  overflow: hidden;
+.directory-fields .directory-file-input {
   color: var(--muted);
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
-  font-size: 11px;
-  line-height: 1.35;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: 12px;
 }
 
 .add-section-button {
