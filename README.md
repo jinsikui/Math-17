@@ -23,3 +23,22 @@
 ```
 
 应用会自动解析为 `/content-images/example.png`。
+
+## 背景块语法
+
+正文 Markdown 支持一种只负责加背景色的块级容器语法：
+
+```md
+:::bg
+这里可以继续写普通 Markdown。
+
+- 列表
+- 公式
+
+$$
+\alpha + \beta = \gamma
+$$
+:::
+```
+
+`:::bg` 内部仍然按正常 Markdown 渲染，背景色与当前块级公式框保持一致。

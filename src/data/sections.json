@@ -20,19 +20,19 @@
   {
     "id": "necessity",
     "title": "猜想和必要性证明",
-    "eyebrow": "为什么会有限制",
+    "eyebrow": "数域和维数理论",
     "markdownFile": "necessity.md"
   },
   {
     "id": "sufficiency",
     "title": "充分性证明",
-    "eyebrow": "十七的特殊结构",
+    "eyebrow": "高斯的杰出贡献",
     "markdownFile": "sufficiency.md"
   },
   {
     "id": "pentagon",
-    "title": "实战正五边形",
-    "eyebrow": "热身样例",
+    "title": "实作正五边形",
+    "eyebrow": "学会了吗",
     "markdownFile": "pentagon.md"
   }
 ]

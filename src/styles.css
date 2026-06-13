@@ -7,6 +7,7 @@
   text-rendering: optimizeLegibility;
   --paper: #fbf8f2;
   --paper-deep: #efe5d6;
+  --paper-plain: #ffffff;
   --earth: #9d8262;
   --earth-soft: #d8c8b4;
   --ink: #302820;
@@ -78,9 +79,12 @@ button {
   border-bottom: 1px solid var(--line);
 }
 
-.brand-block svg {
-  color: var(--sage);
+.brand-icon {
+  display: block;
+  width: 24px;
+  height: 24px;
   margin-top: 4px;
+  flex-shrink: 0;
 }
 
 .kicker {
@@ -456,19 +460,31 @@ button {
 
 .topbar {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 18px;
   margin: 0 auto 22px;
   max-width: 1120px;
+  min-height: 84px;
 }
 
 .toolbar {
+  position: fixed;
+  top: 18px;
+  right: 8px;
+  z-index: 30;
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 10px;
+  gap: 6px;
   flex-wrap: wrap;
+  max-width: min(calc(100vw - 28px), 540px);
+  padding: 6px;
+  border: 1px solid rgba(132, 111, 86, 0.22);
+  border-radius: 10px;
+  background: rgba(251, 248, 242, 0.9);
+  box-shadow: 0 18px 42px rgba(83, 62, 38, 0.12);
+  backdrop-filter: blur(16px);
 }
 
 .segmented {
@@ -498,7 +514,7 @@ button {
 }
 
 .segmented button {
-  min-width: 88px;
+  min-width: 72px;
   background: transparent;
 }
 
@@ -509,7 +525,7 @@ button {
 }
 
 .ghost-button {
-  padding: 0 14px;
+  padding: 0 10px;
   border-color: var(--line);
   background: rgba(251, 248, 242, 0.72);
 }
@@ -524,7 +540,7 @@ button {
   align-items: center;
   justify-content: center;
   min-height: 34px;
-  padding: 0 11px;
+  padding: 0 8px;
   border: 1px solid rgba(103, 116, 100, 0.26);
   border-radius: 999px;
   background: rgba(251, 248, 242, 0.72);
@@ -680,13 +696,37 @@ button {
   color: var(--muted);
 }
 
+.reading-view .reading-background-block {
+  margin: 24px 0;
+  padding: 18px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper-plain);
+}
+
+.reading-view .reading-background-block > :first-child {
+  margin-top: 0;
+}
+
+.reading-view .reading-background-block > :last-child {
+  margin-bottom: 0;
+}
+
 .reading-view .katex-display {
   margin: 24px 0;
   padding: 18px 14px;
   overflow-x: auto;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #f8f1e8;
+  background: var(--paper-plain);
+}
+
+.reading-view .katex-display > .katex {
+  font-size: 1em;
+}
+
+.reading-view .katex-display .cjk_fallback {
+  font-family: "Iowan Old Style", "Songti SC", "Noto Serif SC", Georgia, serif;
 }
 
 .editor-panel {
@@ -828,12 +868,15 @@ body.doodle-active {
   }
 
   .topbar {
-    align-items: stretch;
+    align-items: flex-start;
     flex-direction: column;
+    min-height: 96px;
   }
 
   .toolbar {
-    justify-content: flex-start;
+    top: 16px;
+    right: 16px;
+    max-width: min(calc(100vw - 32px), 520px);
   }
 }
 
@@ -850,11 +893,33 @@ body.doodle-active {
     grid-template-columns: 1fr;
   }
 
-  .toolbar,
   .segmented,
   .ghost-button,
   .persistence-pill {
-    width: 100%;
+    width: auto;
+  }
+
+  .topbar {
+    min-height: 82px;
+  }
+
+  .toolbar {
+    top: 8px;
+    right: 8px;
+    max-width: calc(100vw - 16px);
+  }
+
+  .segmented button,
+  .ghost-button {
+    width: 38px;
+    min-width: 38px;
+    padding: 0;
+    gap: 0;
+    font-size: 0;
+  }
+
+  .persistence-pill {
+    max-width: 72px;
   }
 
   .doodle-toolbar {

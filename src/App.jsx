@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeKatex from "rehype-katex";
 import remarkBreaks from "remark-breaks";
+import remarkDirective from "remark-directive";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import projectSections from "./data/sections.json";
@@ -12,7 +13,6 @@ import {
   Eraser,
   Edit3,
   FileText,
-  Landmark,
   PenLine,
   Plus,
   Settings2,
@@ -27,6 +27,7 @@ const SECTIONS_API_PATH = "/api/sections";
 const MARKDOWN_API_BASE_PATH = "/api/markdown";
 const PROBLEM_IMAGE_FILE = "gauss-heptadecagon-memorial.jpg";
 const OLD_PROBLEM_IMAGE_FILE = "gauss-tombstone-heptadecagon-illustration.svg";
+const BACKGROUND_BLOCK_DIRECTIVE_NAME = "bg";
 const PROBLEM_IMAGE_MARKDOWN = `
 
 ## 示例
@@ -119,6 +120,49 @@ function makeUniqueMarkdownFileName(value, usedMarkdownFiles, fallback = "sectio
 
 function getFallbackMarkdownContent(markdownFile) {
   return fallbackMarkdownFiles[`./data/markdown/${markdownFile}`] ?? "";
+}
+
+function visitMarkdownNodes(node, visitor) {
+  if (!node || typeof node !== "object") return;
+  visitor(node);
+  if (!Array.isArray(node.children)) return;
+  node.children.forEach((child) => visitMarkdownNodes(child, visitor));
+}
+
+function replaceDisplayMathSpaces(value) {
+  return value.replace(/ {2,}/g, (spaces) => "\\ ".repeat(spaces.length));
+}
+
+function preserveDisplayMathSpaces() {
+  return (tree) => {
+    visitMarkdownNodes(tree, (node) => {
+      if (node.type !== "math" || typeof node.value !== "string") return;
+
+      const nextValue = replaceDisplayMathSpaces(node.value);
+      node.value = nextValue;
+
+      const htmlTextNode = node.data?.hChildren?.[0]?.children?.[0];
+      if (htmlTextNode?.type === "text") {
+        htmlTextNode.value = nextValue;
+      }
+    });
+  };
+}
+
+function renderBackgroundBlocks() {
+  return (tree) => {
+    visitMarkdownNodes(tree, (node) => {
+      if (node.type !== "containerDirective" || node.name !== BACKGROUND_BLOCK_DIRECTIVE_NAME) return;
+      node.data = {
+        ...node.data,
+        hName: "div",
+        hProperties: {
+          ...node.data?.hProperties,
+          className: ["reading-background-block"],
+        },
+      };
+    });
+  };
 }
 
 function markdownApiPath(markdownFile) {
@@ -539,7 +583,7 @@ function App() {
         );
         setPersistenceState({
           available: true,
-          message: "已连接工程内容文件",
+          message: "已连接",
         });
       } catch {
         if (cancelled) return;
@@ -568,7 +612,7 @@ function App() {
     window.clearTimeout(saveTimeoutRef.current);
     setPersistenceState((current) => ({
       ...current,
-      message: "正在保存到工程文件",
+      message: "保存中",
     }));
 
     saveTimeoutRef.current = window.setTimeout(async () => {
@@ -622,7 +666,7 @@ function App() {
           available: true,
           message: failedMarkdownDeletes.size > 0
             ? "已保存，新文件已写入，旧文件删除失败"
-            : "已保存到工程文件",
+            : "已保存",
         });
       } catch {
         setPersistenceState({
@@ -847,7 +891,7 @@ function App() {
     <main className="app-shell">
       <aside className="sidebar" aria-label="一级目录">
         <div className="brand-block">
-          <Landmark size={24} aria-hidden="true" />
+          <img src="/favicon.svg" alt="" aria-hidden="true" className="brand-icon" />
           <div>
             <h1>尺规作图正17边形</h1>
           </div>
@@ -971,6 +1015,7 @@ function App() {
                 type="button"
                 className={mode === "read" ? "selected" : ""}
                 onClick={() => setMode("read")}
+                title="只读"
               >
                 <BookOpenText size={18} aria-hidden="true" />
                 只读
@@ -979,13 +1024,19 @@ function App() {
                 type="button"
                 className={mode === "edit" ? "selected" : ""}
                 onClick={() => setMode("edit")}
+                title="编辑"
               >
                 <Edit3 size={18} aria-hidden="true" />
                 编辑
               </button>
             </div>
 
-            <button type="button" className="ghost-button draw-toggle" onClick={() => setDoodleMode(true)}>
+            <button
+              type="button"
+              className="ghost-button draw-toggle"
+              onClick={() => setDoodleMode(true)}
+              title="随意写"
+            >
               <Brush size={18} aria-hidden="true" />
               随意写
             </button>
@@ -1016,7 +1067,14 @@ function App() {
           ) : (
             <article className="reading-view">
               <ReactMarkdown
-                remarkPlugins={[remarkGfm, remarkBreaks, remarkMath]}
+                remarkPlugins={[
+                  remarkGfm,
+                  remarkBreaks,
+                  remarkMath,
+                  remarkDirective,
+                  preserveDisplayMathSpaces,
+                  renderBackgroundBlocks,
+                ]}
                 rehypePlugins={[[rehypeKatex, { strict: false, throwOnError: false }]]}
                 components={{ img: MarkdownImage }}
               >
