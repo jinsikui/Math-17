@@ -28,6 +28,11 @@ const MARKDOWN_API_BASE_PATH = "/api/markdown";
 const PROBLEM_IMAGE_FILE = "gauss-heptadecagon-memorial.jpg";
 const OLD_PROBLEM_IMAGE_FILE = "gauss-tombstone-heptadecagon-illustration.svg";
 const BACKGROUND_BLOCK_DIRECTIVE_NAME = "bg";
+const BACKGROUND_BLOCK_UNFOLD_TITLE = "展开";
+const BACKGROUND_BLOCK_FOLD_TITLE = "收起";
+const BACKGROUND_BLOCK_INTERNAL_FOLD_ATTRIBUTE = "bgFold";
+const BACKGROUND_BLOCK_INTERNAL_FOLD_TITLE_ATTRIBUTE = "bgFoldTitle";
+const BACKGROUND_BLOCK_INTERNAL_UNFOLD_TITLE_ATTRIBUTE = "bgUnfoldTitle";
 const PROBLEM_IMAGE_MARKDOWN = `
 
 ## 示例
@@ -149,16 +154,256 @@ function preserveDisplayMathSpaces() {
   };
 }
 
+function normalizeDirectiveBoolean(value) {
+  if (typeof value !== "string") return false;
+  return /^(true|1|yes|on)$/i.test(value.trim());
+}
+
+function readQuotedDirectiveAttributeValue(source, startIndex) {
+  const quote = source[startIndex];
+  let value = "";
+  let index = startIndex + 1;
+
+  while (index < source.length) {
+    const character = source[index];
+
+    if (character === "\\" && index + 1 < source.length) {
+      value += source[index + 1];
+      index += 2;
+      continue;
+    }
+
+    if (character === quote) {
+      return {
+        value,
+        endIndex: index + 1,
+      };
+    }
+
+    value += character;
+    index += 1;
+  }
+
+  return null;
+}
+
+function parseBackgroundDirectiveAttributeString(value) {
+  const attributes = {};
+  let index = 0;
+
+  while (index < value.length) {
+    while (index < value.length && /[\s,]/.test(value[index])) {
+      index += 1;
+    }
+
+    if (index >= value.length) break;
+
+    const keyMatch = value.slice(index).match(/^[A-Za-z][\w-]*/);
+    if (!keyMatch) return null;
+
+    const key = keyMatch[0];
+    index += key.length;
+
+    while (index < value.length && /\s/.test(value[index])) {
+      index += 1;
+    }
+
+    if (value[index] !== "=") return null;
+    index += 1;
+
+    while (index < value.length && /\s/.test(value[index])) {
+      index += 1;
+    }
+
+    let attributeValue = "";
+    if (value[index] === "\"" || value[index] === "'") {
+      const quotedValue = readQuotedDirectiveAttributeValue(value, index);
+      if (!quotedValue) return null;
+      attributeValue = quotedValue.value;
+      index = quotedValue.endIndex;
+    } else {
+      const startIndex = index;
+      while (index < value.length && !/[\s,]/.test(value[index])) {
+        index += 1;
+      }
+      attributeValue = value.slice(startIndex, index);
+    }
+
+    attributes[key] = attributeValue;
+  }
+
+  return attributes;
+}
+
+function serializeBackgroundDirectiveAttributes(attributes) {
+  const normalizedAttributes = {};
+
+  if (typeof attributes.fold === "string") {
+    normalizedAttributes[BACKGROUND_BLOCK_INTERNAL_FOLD_ATTRIBUTE] = attributes.fold;
+  }
+  if (typeof attributes.foldTitle === "string" && attributes.foldTitle.trim()) {
+    normalizedAttributes[BACKGROUND_BLOCK_INTERNAL_FOLD_TITLE_ATTRIBUTE] = attributes.foldTitle.trim();
+  }
+  if (typeof attributes.unfoldTitle === "string" && attributes.unfoldTitle.trim()) {
+    normalizedAttributes[BACKGROUND_BLOCK_INTERNAL_UNFOLD_TITLE_ATTRIBUTE] = attributes.unfoldTitle.trim();
+  }
+
+  return Object.entries(normalizedAttributes)
+    .map(([key, value]) =>
+      key === BACKGROUND_BLOCK_INTERNAL_FOLD_ATTRIBUTE ? `${key}=${value}` : `${key}=${JSON.stringify(value)}`
+    )
+    .join(" ");
+}
+
+function normalizeBackgroundDirectiveSyntax(markdown) {
+  if (typeof markdown !== "string" || !markdown.includes(`:::${BACKGROUND_BLOCK_DIRECTIVE_NAME}[`)) {
+    return markdown;
+  }
+
+  return markdown
+    .split("\n")
+    .map((line) => {
+      const match = line.match(/^(\s*:::\s*bg)\[(.*)\]\s*$/);
+      if (!match) return line;
+
+      const [, prefix, rawAttributes = ""] = match;
+      const normalizedAttributes = parseBackgroundDirectiveAttributeString(rawAttributes.trim());
+      const serializedAttributes = normalizedAttributes
+        ? serializeBackgroundDirectiveAttributes(normalizedAttributes)
+        : "";
+
+      if (!serializedAttributes) {
+        return prefix;
+      }
+
+      return `${prefix}{${serializedAttributes}}`;
+    })
+    .join("\n");
+}
+
+function readBackgroundBlockOptions(node) {
+  const attributes = node.attributes ?? {};
+  const foldTitle =
+    typeof attributes[BACKGROUND_BLOCK_INTERNAL_FOLD_TITLE_ATTRIBUTE] === "string"
+      && attributes[BACKGROUND_BLOCK_INTERNAL_FOLD_TITLE_ATTRIBUTE].trim()
+      ? attributes[BACKGROUND_BLOCK_INTERNAL_FOLD_TITLE_ATTRIBUTE].trim()
+      : BACKGROUND_BLOCK_FOLD_TITLE;
+  const unfoldTitle =
+    typeof attributes[BACKGROUND_BLOCK_INTERNAL_UNFOLD_TITLE_ATTRIBUTE] === "string"
+      && attributes[BACKGROUND_BLOCK_INTERNAL_UNFOLD_TITLE_ATTRIBUTE].trim()
+      ? attributes[BACKGROUND_BLOCK_INTERNAL_UNFOLD_TITLE_ATTRIBUTE].trim()
+      : BACKGROUND_BLOCK_UNFOLD_TITLE;
+
+  if (Object.prototype.hasOwnProperty.call(attributes, BACKGROUND_BLOCK_INTERNAL_FOLD_ATTRIBUTE)) {
+    return {
+      hasFold: true,
+      isInitiallyFolded: normalizeDirectiveBoolean(attributes[BACKGROUND_BLOCK_INTERNAL_FOLD_ATTRIBUTE]),
+      foldTitle,
+      unfoldTitle,
+    };
+  }
+
+  return {
+    hasFold: false,
+    isInitiallyFolded: false,
+    foldTitle,
+    unfoldTitle,
+  };
+}
+
+function normalizeClassName(className) {
+  if (Array.isArray(className)) return className.filter(Boolean).join(" ");
+  return typeof className === "string" ? className : "";
+}
+
+function MarkdownContainer({ node: _node, className, children, ...props }) {
+  const resolvedClassName = normalizeClassName(className);
+  const classNames = resolvedClassName.split(/\s+/).filter(Boolean);
+  const isBackgroundBlock = classNames.includes("reading-background-block");
+  const hasFold = props["data-has-fold"] === "true";
+  const isInitiallyFolded = props["data-folded"] === "true";
+  const foldTitle =
+    typeof props["data-fold-title"] === "string" && props["data-fold-title"].trim()
+      ? props["data-fold-title"].trim()
+      : BACKGROUND_BLOCK_FOLD_TITLE;
+  const unfoldTitle =
+    typeof props["data-unfold-title"] === "string" && props["data-unfold-title"].trim()
+      ? props["data-unfold-title"].trim()
+      : BACKGROUND_BLOCK_UNFOLD_TITLE;
+  const [isOpen, setIsOpen] = useState(() => !isInitiallyFolded);
+  const isFoldableBackgroundBlock = isBackgroundBlock && hasFold;
+  const {
+    ["data-has-fold"]: _dataHasFold,
+    ["data-folded"]: _dataFolded,
+    ["data-fold-title"]: _dataFoldTitle,
+    ["data-unfold-title"]: _dataUnfoldTitle,
+    ...elementProps
+  } = props;
+
+  useEffect(() => {
+    if (!isFoldableBackgroundBlock) return;
+    setIsOpen(!isInitiallyFolded);
+  }, [isFoldableBackgroundBlock, isInitiallyFolded]);
+
+  if (!isFoldableBackgroundBlock) {
+    return (
+      <div className={resolvedClassName || undefined} {...elementProps}>
+        {children}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`${resolvedClassName} reading-background-block-foldable${isOpen ? " is-open" : ""}`}
+      {...elementProps}
+    >
+      <button
+        type="button"
+        className="reading-background-block-toggle"
+        onClick={() => setIsOpen((current) => !current)}
+        aria-expanded={isOpen}
+        aria-label={isOpen ? foldTitle : unfoldTitle}
+      >
+        <span className="reading-background-block-toggle-copy" aria-hidden="true">
+          <span className="reading-background-block-toggle-label reading-background-block-toggle-label-collapsed">
+            {unfoldTitle}
+          </span>
+          <span className="reading-background-block-toggle-label reading-background-block-toggle-label-expanded">
+            {foldTitle}
+          </span>
+        </span>
+      </button>
+
+      <div className="reading-background-block-panel" aria-hidden={!isOpen}>
+        <div className="reading-background-block-panel-inner">
+          <div className="reading-background-block-body">{children}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function renderBackgroundBlocks() {
   return (tree) => {
     visitMarkdownNodes(tree, (node) => {
       if (node.type !== "containerDirective" || node.name !== BACKGROUND_BLOCK_DIRECTIVE_NAME) return;
+      const { hasFold, isInitiallyFolded, foldTitle, unfoldTitle } = readBackgroundBlockOptions(node);
+
       node.data = {
         ...node.data,
         hName: "div",
         hProperties: {
           ...node.data?.hProperties,
           className: ["reading-background-block"],
+          ...(hasFold
+            ? {
+                "data-has-fold": "true",
+                "data-folded": isInitiallyFolded ? "true" : "false",
+                "data-fold-title": foldTitle,
+                "data-unfold-title": unfoldTitle,
+              }
+            : {}),
         },
       };
     });
@@ -1076,9 +1321,9 @@ function App() {
                   renderBackgroundBlocks,
                 ]}
                 rehypePlugins={[[rehypeKatex, { strict: false, throwOnError: false }]]}
-                components={{ img: MarkdownImage }}
+                components={{ div: MarkdownContainer, img: MarkdownImage }}
               >
-                {activeSection.content}
+                {normalizeBackgroundDirectiveSyntax(activeSection.content)}
               </ReactMarkdown>
             </article>
           )}

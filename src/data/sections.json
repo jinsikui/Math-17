@@ -19,9 +19,15 @@
   },
   {
     "id": "necessity",
-    "title": "猜想和必要性证明",
+    "title": "猜想和必要性证明（一）",
     "eyebrow": "数域和维数理论",
-    "markdownFile": "necessity.md"
+    "markdownFile": "necessity-1.md"
+  },
+  {
+    "id": "section-1781939769819-9jsjsl",
+    "title": "猜想和必要性证明（二）",
+    "eyebrow": "n次分圆多项式",
+    "markdownFile": "necessity-2.md"
   },
   {
     "id": "sufficiency",
@@ -32,7 +38,73 @@
   {
     "id": "pentagon",
     "title": "实作正五边形",
-    "eyebrow": "学会了吗",
+    "eyebrow": "实战检验",
     "markdownFile": "pentagon.md"
+  },
+  {
+    "id": "section-1781833830045-js75k7",
+    "title": "附录1 - 多项式的带余除法",
+    "eyebrow": "存在且唯一",
+    "markdownFile": "poly-div.md"
+  },
+  {
+    "id": "section-1783142047136-aa8tjy",
+    "title": "附录2 - 求最大公约式",
+    "eyebrow": "辗转相除算法",
+    "markdownFile": "poly-gcd.md"
+  },
+  {
+    "id": "section-1781834345176-sbf41i",
+    "title": "附录3 - 裴蜀定理",
+    "eyebrow": "同时适用整数和多项式",
+    "markdownFile": "Bézout-lemma.md"
+  },
+  {
+    "id": "section-1783142755388-echlcx",
+    "title": "附录4 - 多项式的分解",
+    "eyebrow": "因式定理 + 唯一分解定理",
+    "markdownFile": "poly-factoring.md"
+  },
+  {
+    "id": "section-1782525774258-9npu3l",
+    "title": "附录5 - 高斯引理",
+    "eyebrow": "整系数多项式的分解",
+    "markdownFile": "gauss_lemma.md"
+  },
+  {
+    "id": "section-1783146257749-i3qnsf",
+    "title": "附录6 - 模 p 的多项式",
+    "eyebrow": "普通多项式定理都适用",
+    "markdownFile": "poly-mod-p.md"
+  },
+  {
+    "id": "section-1783146875191-upho7p",
+    "title": "附录7 - 费马小定理",
+    "eyebrow": "素数 p 整除判定法",
+    "markdownFile": "Fermat-little-theorem.md"
+  },
+  {
+    "id": "section-1783146371851-ytw32q",
+    "title": "附录8 - 多项式重因式判定",
+    "eyebrow": "形式导数的应用",
+    "markdownFile": "poly-muti-factor.md"
+  },
+  {
+    "id": "section-1782525683284-yi8ree",
+    "title": "附录9 - 代数基本定理",
+    "eyebrow": "复数域下多项式根的个数",
+    "markdownFile": "fundamental_theorem_of_algebr.md"
+  },
+  {
+    "id": "section-1783258515869-h6tv63",
+    "title": "附录10 - 欧拉函数",
+    "eyebrow": "1...n 中和 n 互素的整数个数",
+    "markdownFile": "Euler-totient-function.md"
+  },
+  {
+    "id": "section-1783259217126-x8qv74",
+    "title": "附录11 - 中国剩余定理",
+    "eyebrow": "解同余方程组",
+    "markdownFile": "chinese-remainder-theorem.md"
   }
 ]

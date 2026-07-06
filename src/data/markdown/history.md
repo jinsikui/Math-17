@@ -27,6 +27,6 @@
 高斯本人对这个成就感到无比骄傲。据说他曾留下遗嘱，希望死后能在自己的墓碑上刻一个正十七边形。但是后来被石匠拒绝了（因为石匠认为正十七边形刻在石头上用肉眼看过去，跟一个普通的圆圈几乎没有任何区别）。
 
 1880 年，不伦瑞克市为这位伟大的老乡竖立了一座高大的青铜纪念碑（Gauß-Denkmal）。为了向他最骄傲的几何成就致敬，同时又吸取了当年石匠的教训，雕塑家做了一个极其巧妙的变通，在这座纪念碑的底座侧面，雕刻了一颗正十七角星：
-![高斯纪念碑](gauss_monument_2.jpg)![布伦瑞克高斯纪念碑上的 17 角星](gauss-heptadecagon-memorial.jpg)
+![高斯纪念碑](gauss_monument.jpg)![高斯纪念碑](gauss_monument_2.jpg)![布伦瑞克高斯纪念碑上的 17 角星](gauss-heptadecagon-memorial.jpg)
 
 图中是布伦瑞克高斯纪念碑上的 17 角星意象。它常被用来纪念高斯对正十七边形可作性的发现。图片：Brunswyk / [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Braunschweig_Gauss-Denkmal_17-eckiger_Stern.jpg)，CC BY-SA 3.0 / GFDL。

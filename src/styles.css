@@ -704,6 +704,128 @@ button {
   background: var(--paper-plain);
 }
 
+.reading-view .reading-background-block-foldable {
+  padding: 0;
+  overflow: hidden;
+  border-color: transparent;
+  background: transparent;
+  transition:
+    border-color 300ms ease,
+    background-color 300ms ease,
+    box-shadow 300ms ease;
+}
+
+.reading-view .reading-background-block-foldable.is-open {
+  border-color: var(--line);
+  background: var(--paper-plain);
+}
+
+.reading-view .reading-background-block-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+  font-family: inherit;
+  font-size: 0.9em;
+  font-weight: inherit;
+  line-height: inherit;
+  transition:
+    padding 300ms ease,
+    color 300ms ease,
+    opacity 300ms ease;
+}
+
+.reading-view .reading-background-block-foldable.is-open .reading-background-block-toggle {
+  padding: 16px 14px 10px;
+}
+
+.reading-view .reading-background-block-toggle::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  margin-top: -2px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  opacity: 0.68;
+  transform: rotate(-45deg);
+  transition:
+    transform 300ms ease,
+    opacity 300ms ease;
+}
+
+.reading-view .reading-background-block-foldable.is-open .reading-background-block-toggle::before {
+  transform: rotate(45deg);
+}
+
+.reading-view .reading-background-block-toggle-copy {
+  display: inline-grid;
+}
+
+.reading-view .reading-background-block-toggle-label {
+  grid-area: 1 / 1;
+  transition:
+    opacity 300ms ease,
+    transform 300ms ease;
+}
+
+.reading-view .reading-background-block-toggle-label-expanded {
+  opacity: 0;
+  transform: translateY(-0.18em);
+}
+
+.reading-view .reading-background-block-foldable.is-open .reading-background-block-toggle-label-collapsed {
+  opacity: 0;
+  transform: translateY(0.18em);
+}
+
+.reading-view .reading-background-block-foldable.is-open .reading-background-block-toggle-label-expanded {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.reading-view .reading-background-block-toggle:focus-visible {
+  outline: 2px solid rgba(103, 116, 100, 0.28);
+  outline-offset: -2px;
+}
+
+.reading-view .reading-background-block-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows 300ms ease,
+    opacity 300ms ease;
+}
+
+.reading-view .reading-background-block-foldable.is-open .reading-background-block-panel {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.reading-view .reading-background-block-panel-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.reading-view .reading-background-block-body {
+  padding: 0 14px 18px;
+}
+
+.reading-view .reading-background-block-body > :first-child {
+  margin-top: 0;
+}
+
+.reading-view .reading-background-block-body > :last-child {
+  margin-bottom: 0;
+}
+
 .reading-view .reading-background-block > :first-child {
   margin-top: 0;
 }
@@ -725,7 +847,15 @@ button {
   font-size: 1em;
 }
 
-.reading-view .katex-display .cjk_fallback {
+.reading-view .katex .mord.text {
+  font-size: calc(1em / 1.21);
+}
+
+.reading-view .katex-display > .katex .mord.text {
+  font-size: 1em;
+}
+
+.reading-view .katex .text .cjk_fallback {
   font-family: "Iowan Old Style", "Songti SC", "Noto Serif SC", Georgia, serif;
 }
 
