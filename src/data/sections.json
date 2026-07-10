@@ -106,5 +106,11 @@
     "title": "附录11 - 中国剩余定理",
     "eyebrow": "解同余方程组",
     "markdownFile": "chinese-remainder-theorem.md"
+  },
+  {
+    "id": "section-1783687229118-icqwpe",
+    "title": "附录12 - 模 n 的原根",
+    "eyebrow": "模 n 下的周期规律",
+    "markdownFile": "primitive-roots.md"
   }
 ]
