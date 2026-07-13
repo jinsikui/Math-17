@@ -17,14 +17,14 @@
 ![作一个角的角平分线](angle_div.jpg)
 - 作两个角的和/差（利用圆的弦与圆心角的关系）
 ![作两个角的和](angle_plus.jpg)
-- 已知单位长度线段，可以作出所有`正整数`长度的线段（$1 \rightarrow n$)
+- 已知单位长度线段，可以作出所有 `正整数` 长度的线段（$1 \rightarrow n$)
 ![在直线上倍长线段](one_to_n.jpg)
-- 给定两条线段，可以作它们长度的`和`和`差`（$m,n \rightarrow m \pm n$）
+- 给定两条线段，可以作它们长度的 `和` 和 `差` （$m,n \rightarrow m \pm n$）
 ![线段长度的和](m_plus_n.jpg)
-- 给定两条线段，利用相似三角形，可以作出它们长度的`积`（$m,n \rightarrow m \times n$）
+- 给定两条线段，利用相似三角形，可以作出它们长度的 `积` （$m,n \rightarrow m \times n$）
 ![线段长度的积](m_multi_n.jpg)
-- 给定两条线段，利用相似三角形，可以作出它们长度的`商`（$m,n \rightarrow \frac{m}{n}$）
+- 给定两条线段，利用相似三角形，可以作出它们长度的 `商` （$m,n \rightarrow \frac{m}{n}$）
 （所有有理数都可由尺规作图得到）
 ![线段长度的商](m_div_n.jpg)
-- 给定一条线段，利用相似直角三角形，可以作出它长度的`开方`（$m \rightarrow \sqrt{m}$）
+- 给定一条线段，利用相似直角三角形，可以作出它长度的 `开方` （$m \rightarrow \sqrt{m}$）
 ![线段长度的开方](sqrt_m.jpg)

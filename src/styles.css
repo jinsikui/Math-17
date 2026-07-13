@@ -114,7 +114,13 @@ button {
   gap: 8px;
   min-height: 0;
   overflow-y: auto;
+  scrollbar-width: none;
   padding-right: 2px;
+}
+
+.section-nav::-webkit-scrollbar,
+.directory-editor-list::-webkit-scrollbar {
+  display: none;
 }
 
 .nav-item {
@@ -207,6 +213,7 @@ button {
   gap: 10px;
   min-height: 0;
   overflow-y: auto;
+  scrollbar-width: none;
   padding-right: 2px;
 }
 
