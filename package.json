@@ -6,7 +6,15 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "node server/site-server.js",
+    "preview:edit": "node server/site-server.js --edit",
+    "serve": "node server/site-server.js",
+    "serve:edit": "node server/site-server.js --edit",
+    "production": "./production.sh",
+    "production:edit": "MATH17_EDITING_ENABLED=1 ./production.sh",
+    "production:build": "./production.sh build",
+    "production:stop": "./production.sh stop",
+    "production:status": "./production.sh status"
   },
   "dependencies": {
     "katex": "^0.17.0",

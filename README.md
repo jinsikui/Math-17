@@ -10,9 +10,54 @@
 
 页面支持左侧一级目录导航，目录标题、描述、顺序和新增目录都可在页面内管理。右侧内容可在编辑态和只读态之间切换，编辑态可输入 Markdown 和 LaTeX 公式，只读态会渲染为排版后的文章与数学公式。也支持进入“随意写”状态，在页面上临时涂鸦、撤销上一笔，并在退出时自动清空笔迹。
 
+## 生产运行
+
+一体化生产启动脚本会自动安装依赖、构建前端、停止旧生产服务，并启动 Node 生产服务。默认只读：
+
+```bash
+HOST=127.0.0.1 PORT=4173 ./production.sh
+```
+
+开启编辑和自动保存：
+
+```bash
+HOST=127.0.0.1 PORT=4173 MATH17_EDITING_ENABLED=1 ./production.sh
+```
+
+如果需要公网监听，把 `HOST` 改为 `0.0.0.0`：
+
+```bash
+HOST=0.0.0.0 PORT=4173 ./production.sh
+```
+
+运行时终端需要保持打开，按 `Ctrl+C` 停止服务。
+
+也可以使用 npm 脚本：
+
+```bash
+npm run production
+npm run production:edit
+npm run production:build
+npm run production:stop
+npm run production:status
+```
+
+脚本默认会运行 `npm ci`、`npm run build`、清理旧的本项目生产服务，然后启动 `node server/site-server.js`。
+
+如果只想手动运行生产服务，也可以先构建前端：
+
+```bash
+npm run build
+HOST=0.0.0.0 PORT=4173 npm run serve
+```
+
+生产服务由 `server/site-server.js` 提供，会同时托管 `dist/` 静态文件和 `/api/sections`、`/api/markdown/*` 内容接口。默认只读；只有开启 `MATH17_EDITING_ENABLED=1` 或使用 `npm run serve:edit` 时，页面编辑和自动保存才会写回 `src/data/sections.json` 与 `src/data/markdown/*.md`。
+
+如果只把 `dist/` 目录交给 Nginx 等静态服务器托管，页面仍可阅读构建时打包进去的内容，但不会有内容 API，编辑入口会自动关闭。
+
 ## 内容存储
 
-目录定义保存在 `src/data/sections.json`，每个目录的正文保存在 `src/data/markdown/*.md`。`sections.json` 只记录标题、描述和引用的 Markdown 文件名。页面内新增目录时会输入并创建对应 `.md` 文件；删除目录时会删除它引用的 `.md` 文件。本地开发服务器会提供读写接口，页面内编辑后会自动保存回这些工程文件，因此可以通过 git commit/push 持久化。
+目录定义保存在 `src/data/sections.json`，每个目录的正文保存在 `src/data/markdown/*.md`。`sections.json` 只记录标题、描述和引用的 Markdown 文件名。页面内新增目录时会输入并创建对应 `.md` 文件；删除目录时会删除它引用的 `.md` 文件。内容服务接口会负责读写这些工程文件，页面内编辑后会自动保存，因此可以通过 git commit/push 持久化。
 
 ## 内容图片
 

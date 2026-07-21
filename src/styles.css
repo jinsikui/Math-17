@@ -208,6 +208,19 @@ button {
   background: var(--paper);
 }
 
+.sidebar-tool:disabled,
+.add-section-button:disabled,
+.segmented button:disabled {
+  cursor: not-allowed;
+  opacity: 0.56;
+}
+
+.sidebar-tool:disabled:hover,
+.add-section-button:disabled:hover {
+  border-color: var(--line);
+  background: rgba(251, 248, 242, 0.72);
+}
+
 .directory-editor-list {
   display: grid;
   gap: 10px;
@@ -308,6 +321,12 @@ button {
 .directory-fields input:focus {
   border-color: var(--sage);
   box-shadow: 0 0 0 3px rgba(103, 116, 100, 0.1);
+}
+
+.directory-fields input:disabled {
+  color: #9b8f82;
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
 .directory-fields .directory-file-input {
@@ -567,6 +586,10 @@ button {
 .ghost-button:hover,
 .segmented button:hover {
   border-color: var(--earth-soft);
+}
+
+.segmented button:disabled:hover {
+  border-color: transparent;
 }
 
 .content-frame {

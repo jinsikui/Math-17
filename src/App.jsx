@@ -25,6 +25,7 @@ import {
 
 const SECTIONS_API_PATH = "/api/sections";
 const MARKDOWN_API_BASE_PATH = "/api/markdown";
+const CONTENT_CONFIG_API_PATH = "/api/content-config";
 const PROBLEM_IMAGE_FILE = "gauss-heptadecagon-memorial.jpg";
 const OLD_PROBLEM_IMAGE_FILE = "gauss-tombstone-heptadecagon-illustration.svg";
 const BACKGROUND_BLOCK_DIRECTIVE_NAME = "bg";
@@ -765,8 +766,11 @@ function App() {
   const [doodleMode, setDoodleMode] = useState(false);
   const [persistenceState, setPersistenceState] = useState({
     available: false,
+    editingEnabled: false,
     message: "正在连接内容文件",
   });
+
+  const canEditContent = persistenceState.available && persistenceState.editingEnabled;
 
   const activeSection = useMemo(
     () => sections.find((section) => section.id === activeId) ?? sections[0],
@@ -782,6 +786,12 @@ function App() {
 
     async function loadProjectSections() {
       try {
+        const configResponse = await fetch(CONTENT_CONFIG_API_PATH);
+        if (!configResponse.ok) {
+          throw new Error(`Failed to load content config: ${configResponse.status}`);
+        }
+
+        const contentConfig = await configResponse.json();
         const response = await fetch(SECTIONS_API_PATH);
         if (!response.ok) {
           throw new Error(`Failed to load sections: ${response.status}`);
@@ -819,6 +829,7 @@ function App() {
         );
         skipNextSaveRef.current = true;
         pendingMarkdownDeletesRef.current = [];
+        const editingEnabled = Boolean(contentConfig.editingEnabled);
         setSections(loadedSections);
         setMarkdownFileDrafts({});
         setActiveId((currentActiveId) =>
@@ -828,12 +839,14 @@ function App() {
         );
         setPersistenceState({
           available: true,
-          message: "已连接",
+          editingEnabled,
+          message: editingEnabled ? "已连接" : "只读模式",
         });
       } catch {
         if (cancelled) return;
         setPersistenceState({
           available: false,
+          editingEnabled: false,
           message: "内容文件未连接",
         });
       }
@@ -847,7 +860,23 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!persistenceState.available) return undefined;
+    if (canEditContent) return;
+
+    if (mode === "edit") {
+      setMode("read");
+    }
+
+    if (directoryMode) {
+      setDirectoryMode(false);
+    }
+
+    if (newSectionDialogOpen) {
+      setNewSectionDialogOpen(false);
+    }
+  }, [canEditContent, directoryMode, mode, newSectionDialogOpen]);
+
+  useEffect(() => {
+    if (!canEditContent) return undefined;
 
     if (skipNextSaveRef.current) {
       skipNextSaveRef.current = false;
@@ -907,22 +936,22 @@ function App() {
           (markdownFile) => !resolvedMarkdownDeletes.has(markdownFile)
         );
 
-        setPersistenceState({
-          available: true,
+        setPersistenceState((current) => ({
+          ...current,
           message: failedMarkdownDeletes.size > 0
             ? "已保存，新文件已写入，旧文件删除失败"
             : "已保存",
-        });
+        }));
       } catch {
-        setPersistenceState({
-          available: true,
+        setPersistenceState((current) => ({
+          ...current,
           message: "保存失败",
-        });
+        }));
       }
     }, 350);
 
     return () => window.clearTimeout(saveTimeoutRef.current);
-  }, [persistenceState.available, sections]);
+  }, [canEditContent, sections]);
 
   useEffect(() => {
     if (!sections.some((section) => section.id === activeId)) {
@@ -1004,6 +1033,8 @@ function App() {
   }
 
   function openNewSectionDialog() {
+    if (!canEditContent) return;
+
     setNewSectionDraft(createNewSectionDraft(sections.length));
     setNewSectionDialogOpen(true);
   }
@@ -1027,6 +1058,8 @@ function App() {
   }
 
   function moveSection(sectionId, offset) {
+    if (!canEditContent) return;
+
     setSections((current) => {
       const index = current.findIndex((section) => section.id === sectionId);
       const nextIndex = index + offset;
@@ -1040,6 +1073,8 @@ function App() {
 
   function addSection(event) {
     event.preventDefault();
+
+    if (!canEditContent) return;
 
     const usedMarkdownFiles = new Set(
       sections.map((section) => sanitizeMarkdownFileName(section.markdownFile))
@@ -1073,10 +1108,10 @@ function App() {
     const section = sections.find((item) => item.id === sectionId);
     if (!section) return;
 
-    if (!persistenceState.available) {
+    if (!canEditContent) {
       setPersistenceState((current) => ({
         ...current,
-        message: "内容文件未连接，无法删除目录",
+        message: persistenceState.available ? "只读模式，无法删除目录" : "内容文件未连接，无法删除目录",
       }));
       return;
     }
@@ -1101,10 +1136,10 @@ function App() {
     }
 
     try {
-      setPersistenceState({
-        available: true,
+      setPersistenceState((current) => ({
+        ...current,
         message: "正在删除目录",
-      });
+      }));
 
       await saveSectionMetas(nextSections);
       try {
@@ -1113,22 +1148,22 @@ function App() {
           (markdownFile) => markdownFile !== markdownFileToDelete
         );
       } catch {
-        setPersistenceState({
-          available: true,
+        setPersistenceState((current) => ({
+          ...current,
           message: "目录已删除，Markdown 文件删除失败",
-        });
+        }));
         return;
       }
 
-      setPersistenceState({
-        available: true,
+      setPersistenceState((current) => ({
+        ...current,
         message: "已删除目录",
-      });
+      }));
     } catch {
-      setPersistenceState({
-        available: true,
+      setPersistenceState((current) => ({
+        ...current,
         message: "目录删除保存失败",
-      });
+      }));
     }
   }
 
@@ -1146,7 +1181,13 @@ function App() {
           <button
             type="button"
             className={directoryMode ? "sidebar-tool active" : "sidebar-tool"}
-            onClick={() => setDirectoryMode((current) => !current)}
+            onClick={() => {
+              if (canEditContent) {
+                setDirectoryMode((current) => !current);
+              }
+            }}
+            disabled={!canEditContent}
+            title={canEditContent ? "目录管理" : "只读模式"}
           >
             {directoryMode ? <Check size={17} aria-hidden="true" /> : <Settings2 size={17} aria-hidden="true" />}
             {directoryMode ? "完成管理" : "目录管理"}
@@ -1164,7 +1205,7 @@ function App() {
                   <button
                     type="button"
                     onClick={() => moveSection(section.id, -1)}
-                    disabled={index === 0}
+                    disabled={index === 0 || !canEditContent}
                     aria-label={`上移 ${getSectionTitle(section)}`}
                     title="上移"
                   >
@@ -1173,7 +1214,7 @@ function App() {
                   <button
                     type="button"
                     onClick={() => moveSection(section.id, 1)}
-                    disabled={index === sections.length - 1}
+                    disabled={index === sections.length - 1 || !canEditContent}
                     aria-label={`下移 ${getSectionTitle(section)}`}
                     title="下移"
                   >
@@ -1185,6 +1226,7 @@ function App() {
                     value={section.title}
                     onFocus={() => setActiveId(section.id)}
                     onChange={(event) => updateSectionMeta(section.id, "title", event.target.value)}
+                    disabled={!canEditContent}
                     placeholder="目录标题"
                     aria-label={`${getSectionTitle(section)} 标题`}
                   />
@@ -1192,6 +1234,7 @@ function App() {
                     value={section.eyebrow}
                     onFocus={() => setActiveId(section.id)}
                     onChange={(event) => updateSectionMeta(section.id, "eyebrow", event.target.value)}
+                    disabled={!canEditContent}
                     placeholder="目录描述"
                     aria-label={`${getSectionTitle(section)} 描述`}
                   />
@@ -1203,6 +1246,7 @@ function App() {
                     onChange={(event) => updateMarkdownFileDraft(section.id, event.target.value)}
                     onBlur={() => commitMarkdownFileName(section.id)}
                     onKeyDown={handleMarkdownFileKeyDown}
+                    disabled={!canEditContent}
                     placeholder="Markdown 文件名"
                     aria-label={`${getSectionTitle(section)} Markdown 文件名`}
                   />
@@ -1211,7 +1255,7 @@ function App() {
                   type="button"
                   className="directory-delete-button"
                   onClick={() => deleteSection(section.id)}
-                  disabled={sections.length <= 1 || !persistenceState.available}
+                  disabled={sections.length <= 1 || !canEditContent}
                   aria-label={`删除 ${getSectionTitle(section)}`}
                   title="删除"
                 >
@@ -1220,7 +1264,12 @@ function App() {
               </div>
             ))}
 
-            <button type="button" className="add-section-button" onClick={openNewSectionDialog}>
+            <button
+              type="button"
+              className="add-section-button"
+              onClick={openNewSectionDialog}
+              disabled={!canEditContent}
+            >
               <Plus size={17} aria-hidden="true" />
               新增目录
             </button>
@@ -1268,8 +1317,13 @@ function App() {
               <button
                 type="button"
                 className={mode === "edit" ? "selected" : ""}
-                onClick={() => setMode("edit")}
-                title="编辑"
+                onClick={() => {
+                  if (canEditContent) {
+                    setMode("edit");
+                  }
+                }}
+                disabled={!canEditContent}
+                title={canEditContent ? "编辑" : "只读模式"}
               >
                 <Edit3 size={18} aria-hidden="true" />
                 编辑
