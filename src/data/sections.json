@@ -1,5 +1,11 @@
 [
   {
+    "id": "preface",
+    "title": "前言",
+    "eyebrow": "初等但严谨",
+    "markdownFile": "preface.md"
+  },
+  {
     "id": "problem",
     "title": "问题提出",
     "eyebrow": "历史和背景",
