@@ -122,7 +122,7 @@ $\cos\left(\frac{2\pi}{17}\right) = \frac{R_0}{2} = \frac{Q_0 + \sqrt{Q_0^2 - 4Q
 $\cos\left(\frac{2\pi}{17}\right) = -\frac{1}{16} + \frac{\sqrt{17}}{16} + \frac{\sqrt{34 - 2\sqrt{17}}}{16} + \frac{1}{8}\sqrt{17 + 3\sqrt{17} - \sqrt{34 - 2\sqrt{17}} - 2\sqrt{34 + 2\sqrt{17}}}$
 :::
 
-## 四、实作正 5 边形
+## 三、实作正 5 边形
 
 :::bg
 $5 = 2^2 + 1$ 也是一个费马素数，它的求解过程相对短小精悍，可以再演示一次。我们的目标是求解 $\cos(\frac{2\pi}{5}) = \cos(72^\circ)$

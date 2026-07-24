@@ -1307,7 +1307,7 @@ function App() {
                 className={section.id === activeId ? "nav-item active" : "nav-item"}
                 onClick={() => setActiveId(section.id)}
               >
-                <span className="nav-index">{String(index + 1).padStart(2, "0")}</span>
+                <span className="nav-index">{String(index).padStart(2, "0")}</span>
                 <span>
                   <strong>{getSectionTitle(section)}</strong>
                   {section.eyebrow.trim() ? <small>{section.eyebrow}</small> : null}
