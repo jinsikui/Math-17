@@ -10,9 +10,12 @@ import {
   BookOpenText,
   Brush,
   Check,
+  Contact,
   Eraser,
   Edit3,
   FileText,
+  Mail,
+  MessageCircle,
   PenLine,
   Plus,
   Settings2,
@@ -34,6 +37,13 @@ const BACKGROUND_BLOCK_FOLD_TITLE = "收起";
 const BACKGROUND_BLOCK_INTERNAL_FOLD_ATTRIBUTE = "bgFold";
 const BACKGROUND_BLOCK_INTERNAL_FOLD_TITLE_ATTRIBUTE = "bgFoldTitle";
 const BACKGROUND_BLOCK_INTERNAL_UNFOLD_TITLE_ATTRIBUTE = "bgUnfoldTitle";
+const AUTHOR_PROFILE = {
+  name: "Moses",
+  bio: "程序员，数学爱好者",
+  wechat: "DadLoveSparrow",
+  email: "jinsikui@gmail.com",
+  avatarSrc: "/content-images/author-avatar.jpg",
+};
 const PROBLEM_IMAGE_MARKDOWN = `
 
 ## 示例
@@ -763,6 +773,7 @@ function App() {
     createNewSectionDraft(initialState.sections.length)
   );
   const [newSectionDialogOpen, setNewSectionDialogOpen] = useState(false);
+  const [authorDialogOpen, setAuthorDialogOpen] = useState(false);
   const [doodleMode, setDoodleMode] = useState(false);
   const [persistenceState, setPersistenceState] = useState({
     available: false,
@@ -958,6 +969,19 @@ function App() {
       setActiveId(sections[0]?.id ?? "");
     }
   }, [activeId, sections]);
+
+  useEffect(() => {
+    if (!authorDialogOpen) return undefined;
+
+    function closeAuthorDialogOnEscape(event) {
+      if (event.key === "Escape") {
+        setAuthorDialogOpen(false);
+      }
+    }
+
+    window.addEventListener("keydown", closeAuthorDialogOnEscape);
+    return () => window.removeEventListener("keydown", closeAuthorDialogOnEscape);
+  }, [authorDialogOpen]);
 
   function updateActiveContent(content) {
     setSections((current) =>
@@ -1292,6 +1316,24 @@ function App() {
             ))}
           </nav>
         )}
+
+        <div className="sidebar-author">
+          <button
+            type="button"
+            className="author-entry-button"
+            onClick={() => setAuthorDialogOpen(true)}
+            aria-haspopup="dialog"
+            aria-label="查看作者简介"
+            title="作者简介"
+          >
+            <img src={AUTHOR_PROFILE.avatarSrc} alt="" aria-hidden="true" />
+            <span>
+              <strong>{AUTHOR_PROFILE.name}</strong>
+              <small>作者简介</small>
+            </span>
+            <Contact size={17} aria-hidden="true" />
+          </button>
+        </div>
       </aside>
 
       <section className="workspace">
@@ -1385,6 +1427,65 @@ function App() {
       </section>
 
       {doodleMode ? <DoodleLayer onExit={() => setDoodleMode(false)} /> : null}
+
+      {authorDialogOpen ? (
+        <div
+          className="modal-backdrop"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setAuthorDialogOpen(false);
+            }
+          }}
+        >
+          <section
+            className="author-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="author-dialog-title"
+          >
+            <button
+              type="button"
+              className="section-dialog-close author-dialog-close"
+              onClick={() => setAuthorDialogOpen(false)}
+              aria-label="关闭作者简介弹窗"
+              title="关闭"
+              autoFocus
+            >
+              <X size={18} aria-hidden="true" />
+            </button>
+
+            <img
+              className="author-dialog-avatar"
+              src={AUTHOR_PROFILE.avatarSrc}
+              alt={`${AUTHOR_PROFILE.name} 的头像`}
+            />
+            <div className="author-dialog-copy">
+              <p className="kicker">作者简介</p>
+              <h2 id="author-dialog-title">{AUTHOR_PROFILE.name}</h2>
+              <p>{AUTHOR_PROFILE.bio}</p>
+
+              <dl className="author-contact-list">
+                <div>
+                  <dt>
+                    <MessageCircle size={16} aria-hidden="true" />
+                    微信
+                  </dt>
+                  <dd>{AUTHOR_PROFILE.wechat}</dd>
+                </div>
+                <div>
+                  <dt>
+                    <Mail size={16} aria-hidden="true" />
+                    邮箱
+                  </dt>
+                  <dd>
+                    <a href={`mailto:${AUTHOR_PROFILE.email}`}>{AUTHOR_PROFILE.email}</a>
+                  </dd>
+                </div>
+              </dl>
+            </div>
+          </section>
+        </div>
+      ) : null}
 
       {newSectionDialogOpen ? (
         <div className="modal-backdrop">

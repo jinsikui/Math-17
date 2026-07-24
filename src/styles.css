@@ -111,6 +111,7 @@ button {
 
 .section-nav {
   display: grid;
+  flex: 1 1 auto;
   gap: 8px;
   min-height: 0;
   overflow-y: auto;
@@ -223,11 +224,76 @@ button {
 
 .directory-editor-list {
   display: grid;
+  flex: 1 1 auto;
   gap: 10px;
   min-height: 0;
   overflow-y: auto;
   scrollbar-width: none;
   padding-right: 2px;
+}
+
+.sidebar-author {
+  flex: 0 0 auto;
+  margin-top: auto;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.author-entry-button {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  gap: 11px;
+  align-items: center;
+  width: 100%;
+  min-height: 58px;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(251, 248, 242, 0.72);
+  color: var(--ink);
+  text-align: left;
+}
+
+.author-entry-button:hover {
+  border-color: var(--earth-soft);
+  background: var(--paper);
+}
+
+.author-entry-button img {
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--earth-soft);
+  border-radius: 50%;
+  object-fit: cover;
+  background: #fffdf8;
+}
+
+.author-entry-button strong,
+.author-entry-button small {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.author-entry-button strong {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.author-entry-button small {
+  margin-top: 3px;
+  color: var(--muted);
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+.author-entry-button svg {
+  color: var(--sage);
 }
 
 .directory-editor-row {
@@ -360,6 +426,104 @@ button {
   border-radius: 8px;
   background: var(--paper);
   box-shadow: 0 28px 80px rgba(48, 40, 32, 0.18);
+}
+
+.author-dialog {
+  position: relative;
+  display: grid;
+  grid-template-columns: 118px minmax(0, 1fr);
+  gap: 22px;
+  align-items: center;
+  width: min(100%, 480px);
+  max-height: calc(100vh - 44px);
+  overflow-y: auto;
+  padding: 26px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  box-shadow: 0 28px 80px rgba(48, 40, 32, 0.18);
+}
+
+.author-dialog-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+}
+
+.author-dialog-avatar {
+  width: 118px;
+  height: 118px;
+  border: 1px solid var(--earth-soft);
+  border-radius: 50%;
+  object-fit: cover;
+  background: #fffdf8;
+  box-shadow: 0 14px 34px rgba(83, 62, 38, 0.1);
+}
+
+.author-dialog-copy {
+  min-width: 0;
+  padding-right: 34px;
+}
+
+.author-dialog h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 27px;
+  font-weight: 650;
+  letter-spacing: 0;
+  line-height: 1.18;
+}
+
+.author-dialog-copy > p:not(.kicker) {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.author-contact-list {
+  display: grid;
+  gap: 10px;
+  margin: 20px 0 0;
+  color: var(--ink);
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 14px;
+}
+
+.author-contact-list div {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.author-contact-list dt,
+.author-contact-list dd {
+  margin: 0;
+}
+
+.author-contact-list dt {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--sage);
+  font-weight: 750;
+}
+
+.author-contact-list dd {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-weight: 650;
+}
+
+.author-contact-list a {
+  color: inherit;
+  text-decoration-color: rgba(103, 116, 100, 0.42);
+  text-underline-offset: 3px;
+}
+
+.author-contact-list a:hover {
+  color: var(--sage);
 }
 
 .section-dialog-header {
@@ -1027,6 +1191,10 @@ body.doodle-active {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .sidebar-author {
+    margin-top: 0;
+  }
+
   .topbar {
     align-items: flex-start;
     flex-direction: column;
@@ -1102,6 +1270,24 @@ body.doodle-active {
     width: 100%;
     max-height: calc(100vh - 28px);
     padding: 18px;
+  }
+
+  .author-dialog {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    width: 100%;
+    max-height: calc(100vh - 28px);
+    padding: 22px 18px;
+    text-align: center;
+  }
+
+  .author-dialog-copy {
+    width: 100%;
+    padding-right: 0;
+  }
+
+  .author-contact-list {
+    text-align: left;
   }
 
   .section-dialog-actions {
